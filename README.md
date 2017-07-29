@@ -1,7 +1,7 @@
 # Std logger
 
 [![Build Status](https://travis-ci.org/Thomasdezeeuw/std-logger.svg?branch=master)](https://travis-ci.org/Thomasdezeeuw/std-logger)
-[![Build status](https://ci.appveyor.com/api/projects/status?svg=true)](https://ci.appveyor.com/project/Thomasdezeeuw/std-logger)
+[![Build status](https://ci.appveyor.com/api/projects/status/7g7jjpnq0daq48x7?svg=true)](https://ci.appveyor.com/project/Thomasdezeeuw/std-logger)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Crates.io](https://img.shields.io/crates/v/std-logger.svg)](https://crates.io/crates/std-logger)
 [![Docs](https://docs.rs/std-logger/badge.svg)](https://docs.rs/std-logger)
