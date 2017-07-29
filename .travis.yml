@@ -1,0 +1,19 @@
+sudo: false
+cache: cargo
+os:
+  - linux
+  - osx
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
+script:
+  - cargo --version
+  - rustc --version
+  - cargo build --verbose
+  # Test using all possible feature combinations, keep in sync with AppVeyor.
+  - cargo test --verbose --all-features
+  - cargo test --verbose --no-default-features
+  - cargo test --verbose --no-default-features --features timestamp
+  - cargo test --verbose --no-default-features --features catch-panic
