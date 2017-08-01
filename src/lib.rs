@@ -107,7 +107,7 @@ fn get_max_level() -> LogLevelFilter {
     } else if env::var("DEBUG").is_ok() {
         LogLevelFilter::Debug
     } else {
-        LogLevelFilter::Warn
+        LogLevelFilter::Info
     }
 }
 
