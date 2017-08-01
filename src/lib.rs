@@ -133,7 +133,11 @@ impl Log for Logger {
 /// in sync with the same named function below.
 #[cfg(feature = "timestamp")]
 fn log(record: &LogRecord) {
-    let timestamp = chrono::Utc::now();
+    // TODO: benchmark this.
+    use chrono::format::{Fixed, Item};
+    const FORMAT_ITEMS: &'static [Item<'static>; 1] = &[Item::Fixed(Fixed::RFC3339); 1];
+    let timestamp = chrono::Utc::now()
+        .format_with_items(FORMAT_ITEMS.iter().cloned());
     match record.target() {
         REQUEST_TARGET => {
             write!(&mut stdout(), "{} [REQUEST]: {}\n",
