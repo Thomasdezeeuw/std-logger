@@ -54,6 +54,10 @@ fn log_output() {
     info!(target: REQUEST_TARGET, "request message");
 
     let want = vec![
+        #[cfg(feature = "catch-panic")]
+        "[DEBUG] std_logger: enabled std-logger with log level: TRACE, with logging of panics",
+        #[cfg(not(feature = "catch-panic"))]
+        "[DEBUG] std_logger: enabled std-logger with log level: TRACE, no logging of panics",
         "[TRACE] std_logger::tests: trace message",
         "[DEBUG] std_logger::tests: debug message",
         "[INFO] std_logger::tests: info message",
@@ -106,7 +110,7 @@ fn log_output() {
         let output = unsafe { (&*LOG_OUTPUT)[got_length].as_ref() };
         if let Some(output) = output {
             let got = str::from_utf8(output).expect("unable to parse string").trim();
-            let mut want = "[ERROR] log_panics: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:104".to_owned();
+            let mut want = "[ERROR] log_panics: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:108".to_owned();
             #[cfg(feature = "timestamp")]
             { want = add_timestamp(want, timestamp, got); }
 

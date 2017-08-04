@@ -80,14 +80,19 @@ pub const REQUEST_TARGET: &'static str = "request";
 ///
 /// [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
 pub fn init() {
+    let filter = get_max_level();
     log::set_logger(|max_level| {
-        let filter = get_max_level();
         max_level.set(filter);
         Box::new(Logger { filter: filter })
     }).unwrap_or_else(|_| panic!("failed to initialize the logger"));
 
     #[cfg(feature = "catch-panic")]
     log_panics::init();
+
+    #[cfg(feature = "catch-panic")]
+    debug!("enabled std-logger with log level: {}, with logging of panics", filter);
+    #[cfg(not(feature = "catch-panic"))]
+    debug!("enabled std-logger with log level: {}, no logging of panics", filter);
 }
 
 /// Get the maximum log level based on the environment.
