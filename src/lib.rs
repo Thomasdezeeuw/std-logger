@@ -10,8 +10,6 @@
 // TODO: doc the env variable for changing the log level.
 // TODO: use the log crate to do actual logging.
 
-// TODO: Add tests; reference some global buffer below used in testing.
-
 //! A crate that holds a logging implementation that logs to standard error and
 //! standard out. It uses standard error for all regular messages and standard
 //! out for requests (when using the [`REQUEST_TARGET`]).
@@ -20,6 +18,7 @@
 
 #![warn(missing_docs)]
 
+#[macro_use]
 extern crate log;
 #[cfg(feature = "timestamp")]
 extern crate chrono;
@@ -195,13 +194,68 @@ fn stderr() -> io::Stderr {
 // The testing variant of the functions.
 
 #[cfg(test)]
-#[inline(always)]
-fn stdout() -> Vec<u8> {
-    Vec::new()
+mod test_instruments {
+    use std::io::{self, Write};
+    use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+
+    // TODO: replace `LOG_OUTPUT` with type `[Option<Vec<u8>>; 10]`, once the
+    // `drop_types_in_const` feature is stable, that would make all of this a
+    // bit safer.
+
+    /// The output of the log macros, *if this is not null it must point to
+    /// valid memory*.
+    pub static mut LOG_OUTPUT: *mut [Option<Vec<u8>>; 10] = 0 as *mut [Option<Vec<u8>>; 10];
+
+    /// Maximum number of logs we can hold, keep in sync with above.
+    static LOG_OUTPUT_MAX: usize = 10;
+
+    /// Increase to get a position in the `LOG_OUTPUT` array.
+    pub static LOG_OUTPUT_INDEX: AtomicUsize = ATOMIC_USIZE_INIT;
+
+    /// Simple wrapper around a `Vec<u8>` which add itself to `LOG_OUTPUT` when
+    /// dropped.
+    pub struct LogOutput {
+        /// Must always be something, until it's dropped.
+        inner: Option<Vec<u8>>,
+    }
+
+    impl Write for LogOutput {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            self.inner.as_mut().unwrap().write(buf)
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            self.inner.as_mut().unwrap().flush()
+        }
+    }
+
+    impl Drop for LogOutput {
+        fn drop(&mut self) {
+            let output = self.inner.take().unwrap();
+            let index = LOG_OUTPUT_INDEX.fetch_add(1, Ordering::SeqCst);
+            if index >= LOG_OUTPUT_MAX {
+                panic!("too many logs written, increase the size of `LOG_OUTPUT`");
+            }
+            unsafe {
+                if let Some(log_output) = LOG_OUTPUT.as_mut() {
+                    log_output[index] = Some(output);
+                } else {
+                    panic!("LOG_OUTPUT is not set, this is required in testing");
+                }
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub fn stdout() -> LogOutput {
+        LogOutput { inner: Some(Vec::new()) }
+    }
+
+    #[inline(always)]
+    pub fn stderr() -> LogOutput {
+        LogOutput { inner: Some(Vec::new()) }
+    }
 }
 
 #[cfg(test)]
-#[inline(always)]
-fn stderr() -> Vec<u8> {
-    Vec::new()
-}
+use test_instruments::{stdout, stderr, LOG_OUTPUT};

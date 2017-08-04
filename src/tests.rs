@@ -5,6 +5,9 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
+use std::default::Default;
+use std::str;
+
 use super::*;
 
 #[test]
@@ -27,4 +30,102 @@ fn should_get_the_correct_log_level_from_env() {
 
         env::remove_var(test.0);
     }
+}
+
+#[test]
+fn log_output() {
+    let output = Box::new(Default::default());
+    unsafe {
+        LOG_OUTPUT = Box::into_raw(output);
+    }
+
+    env::set_var("LOG_LEVEL", "TRACE");
+    init();
+    env::remove_var("LOG_LEVEL");
+
+    #[cfg(feature = "timestamp")]
+    let timestamp = chrono::Utc::now();
+
+    trace!("trace message");
+    debug!("debug message");
+    info!("info message");
+    warn!("warn message");
+    error!("error message");
+    info!(target: REQUEST_TARGET, "request message");
+
+    let want = vec![
+        "[TRACE] std_logger::tests: trace message",
+        "[DEBUG] std_logger::tests: debug message",
+        "[INFO] std_logger::tests: info message",
+        "[WARN] std_logger::tests: warn message",
+        "[ERROR] std_logger::tests: error message",
+        "[REQUEST]: request message",
+    ];
+    let mut got = unsafe {
+        (&*LOG_OUTPUT).iter()
+    };
+
+    let mut got_length = 0;
+    let mut want_iter = want.iter();
+    loop {
+        match (want_iter.next(), got.next()) {
+            (Some(want), Some(got)) if got.is_some() => {
+                let got = got.as_ref().unwrap();
+                let got = str::from_utf8(got).expect("unable to parse string").trim();
+
+                let mut want = (*want).to_owned();
+                #[cfg(feature = "timestamp")]
+                { want = add_timestamp(want, timestamp, got); }
+
+                // TODO: for some reason this failure doesn't shows itself in the
+                // output, hence this workaround.
+                println!("Comparing:");
+                println!("want: {}", want);
+                println!("got:  {}", got);
+                assert_eq!(got, want.as_str(), "message differ");
+
+                got_length += 1;
+            },
+            _ => break,
+        }
+    }
+
+    if got_length != want.len() {
+        panic!("the number of log messages got differs from the amount of messages wanted");
+    }
+
+    #[cfg(feature = "catch-panic")]
+    {
+        use std::panic;
+
+        #[cfg(feature = "timestamp")]
+        let timestamp = chrono::Utc::now();
+
+        assert!(panic::catch_unwind(|| panic!("oops")).is_err());
+
+        let output = unsafe { (&*LOG_OUTPUT)[got_length].as_ref() };
+        if let Some(output) = output {
+            let got = str::from_utf8(output).expect("unable to parse string").trim();
+            let mut want = "[ERROR] log_panics: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:104".to_owned();
+            #[cfg(feature = "timestamp")]
+            { want = add_timestamp(want, timestamp, got); }
+
+            println!("Comparing:");
+            println!("want: {}", want);
+            println!("got:  {}", &got[0..want.len()]);
+            assert!(got.starts_with(&want));
+        }
+    }
+}
+
+#[cfg(feature = "timestamp")]
+fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got: &str) -> String {
+    use chrono::{Datelike, Timelike};
+
+    // Add the timestamp to the expected string.
+    let timestamp = format!("{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}+00:00",
+        timestamp.year(), timestamp.month(), timestamp.day(),
+        timestamp.hour(), timestamp.minute(), timestamp.second(),
+        &got[20..26]);
+    format!("{} {}", timestamp, message)
 }
