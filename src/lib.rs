@@ -5,16 +5,37 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-// TODO: update doc below.
-// TODO: update the description in Cargo.toml.
-// TODO: doc the env variable for changing the log level.
-// TODO: use the log crate to do actual logging.
 
 //! A crate that holds a logging implementation that logs to standard error and
 //! standard out. It uses standard error for all regular messages and standard
 //! out for requests (when using the [`REQUEST_TARGET`]).
 //!
+//! # Severity
+//!
+//! You can use various envorinment variables to change the severity (log level)
+//! of the logs to actually log and which to ignore.
+//!
+//! The `TRACE` variable sets the severity to the trace, meaning it will log
+//! everything. `DEBUG` will set it to debug, one level higher then trace and it
+//! will not log anything with a trace severity. `LOG` and `LOG_LEVEL` can be
+//! used to set the severity to a specific value, see the [`log`]'s package
+//! `LogLevelFilter` enum for available values. If none of these envorinment
+//! variables are found it will default to an information severity.
+//!
+//! # Logging requests
+//!
+//! To log requests a special target is provided, [`REQUEST_TARGET`], this will
+//! log these message to standard out rather then standard out. This allows for
+//! seperate processing of error messages and requests. See the
+//! [`REQUEST_TARGET`] constant for an example.
+//!
+//! # Note
+//!
+//! This crate provides only a logging implementation. To do actual logging use
+//! the [`log`] crate and it's various macros.
+//!
 //! [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
+//! [`log`]: https://crates.io/crates/log
 
 #![warn(missing_docs)]
 
@@ -63,6 +84,8 @@ pub const REQUEST_TARGET: &'static str = "request";
 ///
 /// ```text
 /// timestamp [LOG_LEVEL] target: message
+///
+/// 2017-08-04T12:56:48.187155+00:00 [ERROR] my_module: my error message
 /// ```
 ///
 /// For requests (using the [`REQUEST_TARGET`] target when logging, logged to
@@ -70,13 +93,15 @@ pub const REQUEST_TARGET: &'static str = "request";
 ///
 /// ```text
 /// timestamp [REQUEST]: message
+///
+/// 2017-08-04T12:56:48.187182+00:00 [REQUEST]: my request message
 /// ```
 ///
 /// Note that the timestamp is not printed when the `timestamp` feature is not
 /// enabled (this feature is enable by default).
 ///
 /// If the `log-panic` feature is enabled (enabled by default) this will also
-/// catch and log any panics that occur.
+/// log any panics that occur.
 ///
 /// [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
 pub fn init() {
