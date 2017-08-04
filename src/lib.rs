@@ -5,7 +5,6 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-
 //! A crate that holds a logging implementation that logs to standard error and
 //! standard out. It uses standard error for all regular messages and standard
 //! out for requests (when using the [`REQUEST_TARGET`]).
