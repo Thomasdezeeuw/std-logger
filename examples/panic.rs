@@ -20,7 +20,7 @@ fn main() {
 
     // This panic will be logging properly to standard error.
     // Something along these lines:
-    // 2017-07-24 11:14:46.473616 UTC [ERROR] log_panics: thread 'main' panicked at 'oops': panic.rs:24
+    // 2017-08-04T13:52:22.336819+00:00 [ERROR] log_panics: thread 'main' panicked at 'oops': panic.rs:24
     panic!("oops");
 }
 
