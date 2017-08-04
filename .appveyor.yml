@@ -38,4 +38,4 @@ test_script:
   - cargo test --verbose --all-features
   - cargo test --verbose --no-default-features
   - cargo test --verbose --no-default-features --features timestamp
-  - cargo test --verbose --no-default-features --features catch-panic
+  - cargo test --verbose --no-default-features --features log-panic
