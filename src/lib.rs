@@ -22,7 +22,7 @@
 extern crate log;
 #[cfg(feature = "timestamp")]
 extern crate chrono;
-#[cfg(feature = "catch-panic")]
+#[cfg(feature = "log-panic")]
 extern crate log_panics;
 
 #[cfg(test)]
@@ -75,7 +75,7 @@ pub const REQUEST_TARGET: &'static str = "request";
 /// Note that the timestamp is not printed when the `timestamp` feature is not
 /// enabled (this feature is enable by default).
 ///
-/// If the `catch-panic` feature is enabled (enabled by default) this will also
+/// If the `log-panic` feature is enabled (enabled by default) this will also
 /// catch and log any panics that occur.
 ///
 /// [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
@@ -86,12 +86,12 @@ pub fn init() {
         Box::new(Logger { filter: filter })
     }).unwrap_or_else(|_| panic!("failed to initialize the logger"));
 
-    #[cfg(feature = "catch-panic")]
+    #[cfg(feature = "log-panic")]
     log_panics::init();
 
-    #[cfg(feature = "catch-panic")]
+    #[cfg(feature = "log-panic")]
     debug!("enabled std-logger with log level: {}, with logging of panics", filter);
-    #[cfg(not(feature = "catch-panic"))]
+    #[cfg(not(feature = "log-panic"))]
     debug!("enabled std-logger with log level: {}, no logging of panics", filter);
 }
 

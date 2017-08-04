@@ -9,7 +9,7 @@ extern crate std_logger;
 #[macro_use]
 extern crate log;
 
-#[cfg(feature = "catch-panic")]
+#[cfg(feature = "log-panic")]
 fn main() {
     // Initialize the logger.
     std_logger::init();
@@ -24,7 +24,7 @@ fn main() {
     panic!("oops");
 }
 
-#[cfg(not(feature = "catch-panic"))]
+#[cfg(not(feature = "log-panic"))]
 fn main() {
-    panic!("enable the `catch-panic` feature to run this example");
+    panic!("enable the `log-panic` feature to run this example");
 }

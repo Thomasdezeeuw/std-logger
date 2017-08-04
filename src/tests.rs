@@ -54,9 +54,9 @@ fn log_output() {
     info!(target: REQUEST_TARGET, "request message");
 
     let want = vec![
-        #[cfg(feature = "catch-panic")]
+        #[cfg(feature = "log-panic")]
         "[DEBUG] std_logger: enabled std-logger with log level: TRACE, with logging of panics",
-        #[cfg(not(feature = "catch-panic"))]
+        #[cfg(not(feature = "log-panic"))]
         "[DEBUG] std_logger: enabled std-logger with log level: TRACE, no logging of panics",
         "[TRACE] std_logger::tests: trace message",
         "[DEBUG] std_logger::tests: debug message",
@@ -98,7 +98,7 @@ fn log_output() {
         panic!("the number of log messages got differs from the amount of messages wanted");
     }
 
-    #[cfg(feature = "catch-panic")]
+    #[cfg(feature = "log-panic")]
     {
         use std::panic;
 

@@ -16,9 +16,9 @@ travis-ci = { repository = "Thomasdezeeuw/std-logger" }
 appveyor = { repository = "Thomasdezeeuw/std-logger", service = "github" }
 
 [features]
-default = ["timestamp", "catch-panic"]
+default = ["timestamp", "log-panic"]
 timestamp = ["chrono"]
-catch-panic = ["log-panics"]
+log-panic = ["log-panics"]
 
 [dependencies]
 log = "0.3"
