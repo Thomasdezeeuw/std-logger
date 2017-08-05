@@ -110,7 +110,7 @@ fn log_output() {
         let output = unsafe { (&*LOG_OUTPUT)[got_length].as_ref() };
         if let Some(output) = output {
             let got = str::from_utf8(output).expect("unable to parse string").trim();
-            let mut want = "[ERROR] log_panics: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:108".to_owned();
+            let mut want = "[ERROR] panic: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:108".to_owned();
             #[cfg(feature = "timestamp")]
             { want = add_timestamp(want, timestamp, got); }
 
