@@ -161,39 +161,21 @@ impl Log for Logger {
 /// in sync with the same named function below.
 #[cfg(feature = "timestamp")]
 fn log(record: &LogRecord) {
-    // TODO: benchmark this.
-    use chrono::format::Pad::Zero;
-    use chrono::format::Item::{self, Literal, Numeric, Fixed};
-    use chrono::format::Numeric::{Year, Month, Day, Hour, Minute, Second};
-    use chrono::format::Fixed::Nanosecond6;
-    const FORMAT_ITEMS: &[Item<'static>] =  &[
-        Numeric(Year, Zero),
-        Literal("-"),
-        Numeric(Month, Zero),
-        Literal("-"),
-        Numeric(Day, Zero),
-        Literal("T"),
-        Numeric(Hour, Zero),
-        Literal(":"),
-        Numeric(Minute, Zero),
-        Literal(":"),
-        Numeric(Second, Zero),
-        Fixed(Nanosecond6),
-        Literal("Z"),
-        // We're always printing a UTC timezone, no need to print the offset.
-    ];
-
-    let timestamp = chrono::Utc::now()
-        .format_with_items(FORMAT_ITEMS.iter().cloned());
+    use chrono::{Datelike, Timelike};
+    let timestamp = chrono::Utc::now();
     match record.target() {
         REQUEST_TARGET => {
-            write!(&mut stdout(), "{} [REQUEST]: {}\n",
-                timestamp, record.args()
+            write!(&mut stdout(), "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [REQUEST]: {}\n",
+                timestamp.year(), timestamp.month(), timestamp.day(),
+                timestamp.hour(), timestamp.minute(), timestamp.second(),
+                timestamp.nanosecond() / 1000, record.args()
             ).unwrap_or_else(log_failure)
         },
         target => {
-            write!(&mut stderr(), "{} [{}] {}: {}\n",
-                timestamp, record.level(), target, record.args()
+            write!(&mut stderr(), "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [{}] {}: {}\n",
+                timestamp.year(), timestamp.month(), timestamp.day(),
+                timestamp.hour(), timestamp.minute(), timestamp.second(),
+                timestamp.nanosecond() / 1000, record.level(), target, record.args()
             ).unwrap_or_else(log_failure)
         },
     }
