@@ -102,17 +102,19 @@ fn log_output() {
     {
         use std::panic;
 
+        assert!(panic::catch_unwind(|| panic!("oops")).is_err());
+
+        // Get the timetamp after causing the panic to (hopefully) reduce the
+        // flakyness of this test.
         #[cfg(feature = "timestamp")]
         let timestamp = chrono::Utc::now();
-
-        assert!(panic::catch_unwind(|| panic!("oops")).is_err());
 
         let output = unsafe { (&*LOG_OUTPUT)[got_length].as_ref() };
         if let Some(output) = output {
             use std::path::MAIN_SEPARATOR;
             let got = str::from_utf8(output).expect("unable to parse string").trim();
             let mut want = format!("[ERROR] panic: thread \'tests::log_output\' \
-                panicked at \'oops\': src{}tests.rs:108", MAIN_SEPARATOR);
+                panicked at \'oops\': src{}tests.rs:105", MAIN_SEPARATOR);
             #[cfg(feature = "timestamp")]
             { want = add_timestamp(want, timestamp, got); }
 
