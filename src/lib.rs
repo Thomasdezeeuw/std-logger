@@ -46,6 +46,10 @@ extern crate chrono;
 extern crate log_panics;
 
 #[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+
+#[cfg(test)]
 mod tests;
 
 use std::env;
@@ -237,7 +241,7 @@ mod test_instruments {
     pub static mut LOG_OUTPUT: *mut [Option<Vec<u8>>; 10] = 0 as *mut [Option<Vec<u8>>; 10];
 
     /// Maximum number of logs we can hold, keep in sync with above.
-    static LOG_OUTPUT_MAX: usize = 10;
+    const LOG_OUTPUT_MAX: usize = 10;
 
     /// Increase to get a position in the `LOG_OUTPUT` array.
     pub static LOG_OUTPUT_INDEX: AtomicUsize = ATOMIC_USIZE_INIT;
@@ -288,4 +292,4 @@ mod test_instruments {
 }
 
 #[cfg(test)]
-use test_instruments::{stdout, stderr, LOG_OUTPUT};
+use test_instruments::{stdout, stderr, LOG_OUTPUT, LOG_OUTPUT_INDEX};
