@@ -183,7 +183,6 @@ fn log(record: &LogRecord) {
         // We're always printing a UTC timezone, no need to print the offset.
     ];
 
-    //const FORMAT_ITEMS: &'static [Item<'static>; 1] = &[Item::Fixed(Fixed::RFC3339); 1];
     let timestamp = chrono::Utc::now()
         .format_with_items(FORMAT_ITEMS.iter().cloned());
     match record.target() {

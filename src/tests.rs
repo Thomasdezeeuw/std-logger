@@ -109,8 +109,10 @@ fn log_output() {
 
         let output = unsafe { (&*LOG_OUTPUT)[got_length].as_ref() };
         if let Some(output) = output {
+            use std::path::MAIN_SEPARATOR;
             let got = str::from_utf8(output).expect("unable to parse string").trim();
-            let mut want = "[ERROR] panic: thread \'tests::log_output\' panicked at \'oops\': src/tests.rs:108".to_owned();
+            let mut want = format!("[ERROR] panic: thread \'tests::log_output\' \
+                panicked at \'oops\': src{}tests.rs:108", MAIN_SEPARATOR);
             #[cfg(feature = "timestamp")]
             { want = add_timestamp(want, timestamp, got); }
 
