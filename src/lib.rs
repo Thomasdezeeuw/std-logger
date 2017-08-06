@@ -162,8 +162,28 @@ impl Log for Logger {
 #[cfg(feature = "timestamp")]
 fn log(record: &LogRecord) {
     // TODO: benchmark this.
-    use chrono::format::{Fixed, Item};
-    const FORMAT_ITEMS: &'static [Item<'static>; 1] = &[Item::Fixed(Fixed::RFC3339); 1];
+    use chrono::format::Pad::Zero;
+    use chrono::format::Item::{self, Literal, Numeric, Fixed};
+    use chrono::format::Numeric::{Year, Month, Day, Hour, Minute, Second};
+    use chrono::format::Fixed::Nanosecond6;
+    const FORMAT_ITEMS: &[Item<'static>] =  &[
+        Numeric(Year, Zero),
+        Literal("-"),
+        Numeric(Month, Zero),
+        Literal("-"),
+        Numeric(Day, Zero),
+        Literal("T"),
+        Numeric(Hour, Zero),
+        Literal(":"),
+        Numeric(Minute, Zero),
+        Literal(":"),
+        Numeric(Second, Zero),
+        Fixed(Nanosecond6),
+        Literal("Z"),
+        // We're always printing a UTC timezone, no need to print the offset.
+    ];
+
+    //const FORMAT_ITEMS: &'static [Item<'static>; 1] = &[Item::Fixed(Fixed::RFC3339); 1];
     let timestamp = chrono::Utc::now()
         .format_with_items(FORMAT_ITEMS.iter().cloned());
     match record.target() {

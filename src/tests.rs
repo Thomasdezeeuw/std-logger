@@ -127,7 +127,7 @@ fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got:
     use chrono::{Datelike, Timelike};
 
     // Add the timestamp to the expected string.
-    let timestamp = format!("{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}+00:00",
+    let timestamp = format!("{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}Z",
         timestamp.year(), timestamp.month(), timestamp.day(),
         timestamp.hour(), timestamp.minute(), timestamp.second(),
         &got[20..26]);
