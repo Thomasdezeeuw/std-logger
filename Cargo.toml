@@ -6,6 +6,7 @@ description = """
 A logging implementation for the log crate that logs messages to standard
 error and requests to standard out.
 """
+documentation = "https://docs.rs/std-logger"
 repository = "https://github.com/Thomasdezeeuw/std-logger"
 readme = "README.md"
 keywords = ["logging", "log", "standard"]
