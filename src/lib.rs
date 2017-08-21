@@ -28,6 +28,51 @@
 //! seperate processing of error messages and requests. See the
 //! [`REQUEST_TARGET`] constant for an example.
 //!
+//! # Crate features
+//!
+//! This crate has two features, both of which are enabled by default,
+//! "timestamp" and "log-panic".
+//!
+//! ## Timestamp feature
+//!
+//! The "timestamp" feature adds a timestamp infront of every message. It uses
+//! the format defined in [`RFC3339`] with 6 digit nanosecond precision, e.g.
+//! `2017-08-21T13:50:53.383553Z`. This means that the timestamp is **always**
+//! logged in UTC.
+//!
+//!
+//! ## Log-panic feature
+//!
+//! The "log-panic" feature will log all panics using the `error` severity,
+//! rather then using the default panic handler. It will log the panic message
+//! as well as the location and a backtrace, see the log output below for an
+//! example.
+//!
+//! ```log
+//! [ERROR] panic: thread 'main' panicked at 'oops': examples/panic.rs:24
+//! stack backtrace:
+//!    0:        0x106ba8f74 - backtrace::backtrace::trace<closure>
+//!                         at backtrace-0.3.2/src/backtrace/mod.rs:42
+//!    1:        0x106ba49af - backtrace::capture::Backtrace::new::h54d7cfa8f40c5b43
+//!                         at backtrace-0.3.2/src/capture.rs:64
+//!    2:        0x106b9f4e6 - log_panics::init::{{closure}}
+//!                         at log-panics-1.2.0/src/lib.rs:52
+//!    3:        0x106bc6951 - std::panicking::rust_panic_with_hook::h6c19f9ba35264287
+//!                         at src/libstd/panicking.rs:612
+//!    4:        0x106b93146 - std::panicking::begin_panic<&str>
+//!                         at src/libstd/panicking.rs:572
+//!    5:        0x106b93bf1 - panic::main
+//!                         at examples/panic.rs:24
+//!    6:        0x106bc751c - __rust_maybe_catch_panic
+//!                         at src/libpanic_unwind/lib.rs:98
+//!    7:        0x106bc6c08 - std::rt::lang_start::h6f338c4ae2d58bbe
+//!                         at src/libstd/rt.rs:61
+//!    8:        0x106b93c29 - main
+//! ```
+//!
+//! If the "timestamp" feature is enable the message will be prefixed with a
+//! timestamp as described in the [Timestamp feature].
+//!
 //! # Note
 //!
 //! This crate provides only a logging implementation. To do actual logging use
@@ -35,6 +80,8 @@
 //!
 //! [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
 //! [`log`]: https://crates.io/crates/log
+//! [`RFC3339`]: https://tools.ietf.org/html/rfc3339
+//! [Timestamp feature]: #timestamp-feature
 
 #![warn(missing_docs)]
 
