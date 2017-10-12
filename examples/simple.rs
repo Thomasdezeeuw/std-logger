@@ -5,9 +5,9 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-extern crate std_logger;
 #[macro_use]
 extern crate log;
+extern crate std_logger;
 
 use std_logger::REQUEST_TARGET;
 

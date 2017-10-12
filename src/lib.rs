@@ -85,10 +85,10 @@
 
 #![warn(missing_docs)]
 
-#[macro_use]
-extern crate log;
 #[cfg(feature = "timestamp")]
 extern crate chrono;
+#[macro_use]
+extern crate log;
 #[cfg(feature = "log-panic")]
 extern crate log_panics;
 
@@ -277,7 +277,7 @@ fn stderr() -> io::Stderr {
 #[cfg(test)]
 mod test_instruments {
     use std::io::{self, Write};
-    use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+    use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 
     // TODO: replace `LOG_OUTPUT` with type `[Option<Vec<u8>>; 10]`, once the
     // `drop_types_in_const` feature is stable, that would make all of this a
@@ -339,4 +339,4 @@ mod test_instruments {
 }
 
 #[cfg(test)]
-use test_instruments::{stdout, stderr, LOG_OUTPUT, LOG_OUTPUT_INDEX};
+use test_instruments::{stderr, stdout, LOG_OUTPUT, LOG_OUTPUT_INDEX};

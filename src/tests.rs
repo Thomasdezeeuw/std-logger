@@ -5,7 +5,7 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-use std::{str, panic};
+use std::{panic, str};
 use std::default::Default;
 use std::sync::Mutex;
 
