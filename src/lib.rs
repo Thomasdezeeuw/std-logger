@@ -18,7 +18,7 @@
 //! everything. `DEBUG` will set it to debug, one level higher then trace and it
 //! will not log anything with a trace severity. `LOG` and `LOG_LEVEL` can be
 //! used to set the severity to a specific value, see the [`log`]'s package
-//! `LogLevelFilter` enum for available values. If none of these envorinment
+//! `LevelFilter` enum for available values. If none of these envorinment
 //! variables are found it will default to an information severity.
 //!
 //! # Logging requests
@@ -102,7 +102,7 @@ mod tests;
 use std::env;
 use std::io::{self, Write};
 
-use log::{Log, LogLevelFilter, LogMetadata, LogRecord};
+use log::{LevelFilter, Log, Metadata, Record};
 
 /// The log target to use when logging requests. Using this as a target the
 /// message will be logged to standard out.
@@ -156,10 +156,10 @@ pub const REQUEST_TARGET: &'static str = "request";
 /// [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
 pub fn init() {
     let filter = get_max_level();
-    log::set_logger(|max_level| {
-        max_level.set(filter);
-        Box::new(Logger { filter: filter })
-    }).unwrap_or_else(|_| panic!("failed to initialize the logger"));
+    let logger = Logger { filter };
+    log::set_boxed_logger(Box::new(logger))
+        .unwrap_or_else(|_| panic!("failed to initialize the logger"));
+    log::set_max_level(filter);
 
     #[cfg(feature = "log-panic")]
     log_panics::init();
@@ -171,7 +171,7 @@ pub fn init() {
 }
 
 /// Get the maximum log level based on the environment.
-fn get_max_level() -> LogLevelFilter {
+fn get_max_level() -> LevelFilter {
     let vars = ["LOG", "LOG_LEVEL"];
     for var in &vars {
         if let Ok(level) = env::var(var) {
@@ -182,36 +182,38 @@ fn get_max_level() -> LogLevelFilter {
     }
 
     if env::var("TRACE").is_ok() {
-        LogLevelFilter::Trace
+        LevelFilter::Trace
     } else if env::var("DEBUG").is_ok() {
-        LogLevelFilter::Debug
+        LevelFilter::Debug
     } else {
-        LogLevelFilter::Info
+        LevelFilter::Info
     }
 }
 
 /// A simple wrapper to implement `Log` on.
 struct Logger {
     /// The filter used to determine what messages to log.
-    filter: LogLevelFilter,
+    filter: LevelFilter,
 }
 
 impl Log for Logger {
-    fn enabled(&self, metadata: &LogMetadata) -> bool {
+    fn enabled(&self, metadata: &Metadata) -> bool {
         self.filter >= metadata.level()
     }
 
-    fn log(&self, record: &LogRecord) {
+    fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             log(record);
         }
     }
+
+    fn flush(&self) { }
 }
 
 /// The actual logging of a record, including a timestamp. This should be kept
 /// in sync with the same named function below.
 #[cfg(feature = "timestamp")]
-fn log(record: &LogRecord) {
+fn log(record: &Record) {
     use chrono::{Datelike, Timelike};
     let timestamp = chrono::Utc::now();
     match record.target() {
@@ -235,7 +237,7 @@ fn log(record: &LogRecord) {
 /// The actual logging of a record, without a timestamp. This should be kept in
 /// sync with the same named function above.
 #[cfg(not(feature = "timestamp"))]
-fn log(record: &LogRecord) {
+fn log(record: &Record) {
     match record.target() {
         REQUEST_TARGET => {
             write!(&mut stdout(), "[REQUEST]: {}\n", record.args())

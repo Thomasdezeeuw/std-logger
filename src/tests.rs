@@ -16,7 +16,7 @@ lazy_static! {
     static ref SERIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-/// Macro to crate a serial test, that lock the `SERIAL_TEST_MUTEX` while
+/// Macro to crate a serial test, that locks the `SERIAL_TEST_MUTEX` while
 /// testing.
 macro_rules! serial_test {
     (fn $name:ident() $body:block) => {
@@ -32,16 +32,15 @@ macro_rules! serial_test {
     }
 }
 
-/// Changes the environment.
 serial_test!{
     fn should_get_the_correct_log_level_from_env() {
         let tests = vec![
-            ("LOG", "TRACE", LogLevelFilter::Trace),
-            ("LOG", "ERROR", LogLevelFilter::Error),
-            ("LOG_LEVEL", "ERROR", LogLevelFilter::Error),
-            ("LOG_LEVEL", "DEBUG", LogLevelFilter::Debug),
-            ("TRACE", "1", LogLevelFilter::Trace),
-            ("DEBUG", "1", LogLevelFilter::Debug),
+            ("LOG", "TRACE", LevelFilter::Trace),
+            ("LOG", "ERROR", LevelFilter::Error),
+            ("LOG_LEVEL", "ERROR", LevelFilter::Error),
+            ("LOG_LEVEL", "DEBUG", LevelFilter::Debug),
+            ("TRACE", "1", LevelFilter::Trace),
+            ("DEBUG", "1", LevelFilter::Debug),
         ];
 
         for test in tests {
@@ -56,7 +55,6 @@ serial_test!{
     }
 }
 
-/// Changes the environment and the global log buffer.
 serial_test!{
     fn log_output() {
         unsafe { log_setup(); }
@@ -122,8 +120,10 @@ serial_test!{
 unsafe fn log_setup() {
     use std::sync::atomic::Ordering;
 
-    // Cleanup the old logs.
-    if LOG_OUTPUT.as_mut().is_some() {
+    if !LOG_OUTPUT.is_null() {
+        for output in (&mut *LOG_OUTPUT).iter_mut().skip(1) {
+            drop(output.take());
+        }
         LOG_OUTPUT_INDEX.store(1, Ordering::Relaxed);
         return;
     }

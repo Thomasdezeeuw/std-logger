@@ -22,7 +22,7 @@ timestamp = ["chrono"]
 log-panic = ["log-panics"]
 
 [dependencies]
-log = "0.3"
+log = { version = "0.4.0-rc.1", features = ["std"] }
 chrono = { version = "0.4", optional = true }
 log-panics = { version = "1.2", optional = true, features = ["with-backtrace"] }
 
