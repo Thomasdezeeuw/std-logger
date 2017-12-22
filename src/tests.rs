@@ -118,39 +118,6 @@ serial_test!{
     }
 }
 
-/// Changes the environment and the global log buffer.
-#[cfg(feature = "log-panic")]
-serial_test!{
-    fn log_panics() {
-        use std::path::MAIN_SEPARATOR;
-
-        unsafe { log_setup(); }
-
-        assert!(panic::catch_unwind(|| panic!("oops")).is_err());
-
-        // Get the timetamp after causing the panic to (hopefully) reduce the
-        // flakyness of this test.
-        #[cfg(feature = "timestamp")]
-        let timestamp = chrono::Utc::now();
-
-        let output = unsafe { (&*LOG_OUTPUT)[1].as_ref() };
-        if let Some(output) = output {
-            let got = str::from_utf8(output).expect("unable to parse string").trim();
-            let mut want = format!("[ERROR] panic: thread \'tests::log_panics\' \
-                panicked at \'oops\': src{}tests.rs:129", MAIN_SEPARATOR);
-            #[cfg(feature = "timestamp")]
-            { want = add_timestamp(want, timestamp, got); }
-
-            println!("Comparing:");
-            println!("want: {}", want);
-            println!("got:  {}", &got[0..want.len()]);
-            assert!(got.starts_with(&want));
-        } else {
-            panic!("can't retrieve output");
-        }
-    }
-}
-
 /// This requires the `SERIAL_TEST_MUTEX` to be held!
 unsafe fn log_setup() {
     use std::sync::atomic::Ordering;
