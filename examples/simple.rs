@@ -16,8 +16,14 @@ fn main() {
     std_logger::init();
 
     // Fake the handling of a request.
-    logger_middleware(Request { url: "/".to_owned(), method: "GET".to_owned() });
-    logger_middleware(Request { url: "/not_found".to_owned(), method: "GET".to_owned() });
+    logger_middleware(Request {
+        url: "/".to_owned(),
+        method: "GET".to_owned(),
+    });
+    logger_middleware(Request {
+        url: "/not_found".to_owned(),
+        method: "GET".to_owned(),
+    });
 }
 
 // Our fake HTTP request.

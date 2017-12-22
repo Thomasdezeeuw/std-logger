@@ -217,20 +217,32 @@ fn log(record: &Record) {
     use chrono::{Datelike, Timelike};
     let timestamp = chrono::Utc::now();
     match record.target() {
-        REQUEST_TARGET => {
-            write!(&mut stdout(), "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [REQUEST]: {}\n",
-                timestamp.year(), timestamp.month(), timestamp.day(),
-                timestamp.hour(), timestamp.minute(), timestamp.second(),
-                timestamp.nanosecond() / 1000, record.args()
-            ).unwrap_or_else(log_failure)
-        },
-        target => {
-            write!(&mut stderr(), "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [{}] {}: {}\n",
-                timestamp.year(), timestamp.month(), timestamp.day(),
-                timestamp.hour(), timestamp.minute(), timestamp.second(),
-                timestamp.nanosecond() / 1000, record.level(), target, record.args()
-            ).unwrap_or_else(log_failure)
-        },
+        REQUEST_TARGET => write!(
+            &mut stdout(),
+            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [REQUEST]: {}\n",
+            timestamp.year(),
+            timestamp.month(),
+            timestamp.day(),
+            timestamp.hour(),
+            timestamp.minute(),
+            timestamp.second(),
+            timestamp.nanosecond() / 1000,
+            record.args()
+        ).unwrap_or_else(log_failure),
+        target => write!(
+            &mut stderr(),
+            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [{}] {}: {}\n",
+            timestamp.year(),
+            timestamp.month(),
+            timestamp.day(),
+            timestamp.hour(),
+            timestamp.minute(),
+            timestamp.second(),
+            timestamp.nanosecond() / 1000,
+            record.level(),
+            target,
+            record.args()
+        ).unwrap_or_else(log_failure),
     }
 }
 
@@ -239,15 +251,10 @@ fn log(record: &Record) {
 #[cfg(not(feature = "timestamp"))]
 fn log(record: &Record) {
     match record.target() {
-        REQUEST_TARGET => {
-            write!(&mut stdout(), "[REQUEST]: {}\n", record.args())
-                .unwrap_or_else(log_failure)
-        },
-        target => {
-            write!(&mut stderr(), "[{}] {}: {}\n",
-                record.level(), target, record.args()
-            ).unwrap_or_else(log_failure)
-        },
+        REQUEST_TARGET => write!(&mut stdout(), "[REQUEST]: {}\n", record.args())
+            .unwrap_or_else(log_failure),
+        target => write!(&mut stderr(), "[{}] {}: {}\n", record.level(), target, record.args())
+            .unwrap_or_else(log_failure),
     }
 }
 
