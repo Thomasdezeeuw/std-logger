@@ -155,7 +155,14 @@
 //! [`RFC3339`]: https://tools.ietf.org/html/rfc3339
 //! [Timestamp feature]: #timestamp-feature
 
-#![warn(missing_docs)]
+#![warn(missing_debug_implementations,
+        missing_docs,
+        trivial_casts,
+        trivial_numeric_casts,
+        unused_import_braces,
+        unused_qualifications,
+        unused_results,
+)]
 
 #[cfg(feature = "timestamp")]
 extern crate chrono;
