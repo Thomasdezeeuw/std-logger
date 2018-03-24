@@ -124,6 +124,8 @@
 //! extern crate log;
 //! extern crate std_logger;
 //!
+//! use std::time::Duration;
+//!
 //! use std_logger::REQUEST_TARGET;
 //!
 //! fn main() {
@@ -164,6 +166,7 @@
         unused_results,
 )]
 
+#[cfg(not(test))]
 extern crate log;
 
 #[cfg(feature = "timestamp")]
@@ -171,6 +174,10 @@ extern crate chrono;
 
 #[cfg(feature = "log-panic")]
 extern crate log_panics;
+
+#[cfg(test)]
+#[macro_use]
+extern crate log;
 
 #[cfg(test)]
 #[macro_use]
