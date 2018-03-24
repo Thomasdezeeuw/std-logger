@@ -7,19 +7,22 @@
 
 //! A crate that holds a logging implementation that logs to standard error and
 //! standard out. It uses standard error for all regular messages and standard
-//! out for requests (when using the [`REQUEST_TARGET`]).
+//! out for requests.
+//!
 //!
 //! # Severity
 //!
 //! You can use various envorinment variables to change the severity (log level)
-//! of the logs to actually log and which to ignore.
+//! of the messages to actually log and which to ignore.
 //!
-//! The `TRACE` variable sets the severity to the trace, meaning it will log
-//! everything. `DEBUG` will set it to debug, one level higher then trace and it
-//! will not log anything with a trace severity. `LOG` and `LOG_LEVEL` can be
-//! used to set the severity to a specific value, see the [`log`]'s package
-//! `LevelFilter` enum for available values. If none of these envorinment
-//! variables are found it will default to an information severity.
+//! Setting the `TRACE` variable (e.g. `TRACE=1`) sets the severity to the
+//! trace, meaning it will log everything. Setting `DEBUG` will set the severity
+//! to debug, one level higher then trace and it will not log anything with a
+//! trace severity. `LOG` and `LOG_LEVEL` can be used to set the severity to a
+//! specific value, see the [`log`]'s package `LevelFilter` enum for available
+//! values. If none of these envorinment variables are found it will default to
+//! an information severity.
+//!
 //!
 //! # Logging requests
 //!
@@ -28,14 +31,48 @@
 //! seperate processing of error messages and requests. See the
 //! [`REQUEST_TARGET`] constant for an example.
 //!
+//!
+//! # Format
+//!
+//! Logs are formatted using the following format. For messages (logged to
+//! standard error):
+//!
+//! ```text
+//! timestamp [LOG_LEVEL] target: message
+//! ```
+//!
+//! For example:
+//!
+//! ```text
+//! 2017-08-04T12:56:48.187155+00:00 [ERROR] my_module: my error message
+//! ```
+//!
+//! For requests (using the [`REQUEST_TARGET`] target when logging, logged to
+//! standard out):
+//!
+//! ```text
+//! timestamp [REQUEST]: message
+//! ```
+//!
+//! For example:
+//!
+//! ```text
+//! 2017-08-04T12:56:48.187182+00:00 [REQUEST]: my request message
+//! ```
+//!
+//! Note: the timestamp is not printed when the "timestamp" feature is not
+//! enabled (this feature is enabled by default), see [Timestamp feature].
+//!
+//!
 //! # Crate features
 //!
 //! This crate has two features, both of which are enabled by default,
 //! "timestamp" and "log-panic".
 //!
+//!
 //! ## Timestamp feature
 //!
-//! The "timestamp" feature adds a timestamp infront of every message. It uses
+//! The "timestamp" feature adds a timestamp in front of every message. It uses
 //! the format defined in [`RFC3339`] with 6 digit nanosecond precision, e.g.
 //! `2017-08-21T13:50:53.383553Z`. This means that the timestamp is **always**
 //! logged in UTC.
@@ -73,10 +110,45 @@
 //! If the "timestamp" feature is enable the message will be prefixed with a
 //! timestamp as described in the [Timestamp feature].
 //!
+//!
 //! # Note
 //!
 //! This crate provides only a logging implementation. To do actual logging use
 //! the [`log`] crate and it's various macros.
+//!
+//!
+//! # Example
+//!
+//! ```
+//! #[macro_use]
+//! extern crate log;
+//! extern crate std_logger;
+//!
+//! use std_logger::REQUEST_TARGET;
+//!
+//! fn main() {
+//!     // First thing we need to do is initialise the logger before anything
+//!     // else.
+//!     std_logger::init();
+//!
+//!     // Now we can start logging!
+//!     info!("Our application started!");
+//!
+//!     // Do useful stuff, like starting a HTTP server
+//! }
+//!
+//! # struct Request {
+//! #   url: String,
+//! #   status: u16,
+//! #   response_time: Duration,
+//! # }
+//! #
+//! fn log_handler(req: Request) {
+//!     // This will be logged to standard out, rather then standard error.
+//!     info!(target: REQUEST_TARGET, "url = {}, status = {}, response_time = {:?}",
+//!         req.url, req.status, req.response_time);
+//! }
+//! ```
 //!
 //! [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
 //! [`log`]: https://crates.io/crates/log
@@ -104,56 +176,18 @@ use std::io::{self, Write};
 
 use log::{LevelFilter, Log, Metadata, Record};
 
-/// The log target to use when logging requests. Using this as a target the
-/// message will be logged to standard out.
+/// Target for logging requests.
 ///
-/// ```
-/// #[macro_use]
-/// extern crate log;
-/// extern crate std_logger;
+/// See the [crate level documentation] for more.
 ///
-/// use std_logger::REQUEST_TARGET;
-///
-/// # fn main() {
-/// # let url = "/";
-/// # let status = 200;
-/// # let response_time = "20 ms";
-/// // In for example a HTTP handler.
-/// info!(target: REQUEST_TARGET, "url = {}, status = {}, response_time = {}",
-///     url, status, response_time);
-/// # }
-/// ```
+/// [crate level documentation]: index.html
 pub const REQUEST_TARGET: &'static str = "request";
 
-/// Initialize the logger. Any logs with the target set to [`REQUEST_TARGET`]
-/// will be logged to standard out, any other logs will be printed to standard
-/// error. If the initializion fails this function will panic.
+/// Initialise the logger.
 ///
-/// Logs are formatted using the following format. For messages (logged to
-/// standard error):
+/// See the [crate level documentation] for more.
 ///
-/// ```text
-/// timestamp [LOG_LEVEL] target: message
-///
-/// 2017-08-04T12:56:48.187155+00:00 [ERROR] my_module: my error message
-/// ```
-///
-/// For requests (using the [`REQUEST_TARGET`] target when logging, logged to
-/// standard out):
-///
-/// ```text
-/// timestamp [REQUEST]: message
-///
-/// 2017-08-04T12:56:48.187182+00:00 [REQUEST]: my request message
-/// ```
-///
-/// Note that the timestamp is not printed when the `timestamp` feature is not
-/// enabled (this feature is enable by default).
-///
-/// If the `log-panic` feature is enabled (enabled by default) this will also
-/// log any panics that occur.
-///
-/// [`REQUEST_TARGET`]: constant.REQUEST_TARGET.html
+/// [crate level documentation]: index.html
 pub fn init() {
     let filter = get_max_level();
     let logger = Logger { filter };
@@ -190,7 +224,7 @@ fn get_max_level() -> LevelFilter {
     }
 }
 
-/// A simple wrapper to implement `Log` on.
+/// A simple struct which implements `Log`.
 struct Logger {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
