@@ -251,7 +251,7 @@ impl Log for Logger {
         }
     }
 
-    fn flush(&self) { }
+    fn flush(&self) {}
 }
 
 /// The actual logging of a record, including a timestamp. This should be kept

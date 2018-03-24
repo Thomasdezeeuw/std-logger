@@ -19,20 +19,20 @@ lazy_static! {
 /// Macro to crate a serial test, that locks the `SERIAL_TEST_MUTEX` while
 /// testing.
 macro_rules! serial_test {
-    (fn $name:ident() $body:block) => {
+    (fn $name: ident() $body: block) => {
         #[test]
         fn $name() {
             let guard = SERIAL_TEST_MUTEX.lock().unwrap();
             // Catch any panics to not poisen the lock.
-            if let Err(err) = panic::catch_unwind(|| { $body }) {
+            if let Err(err) = panic::catch_unwind(|| $body) {
                 drop(guard);
                 panic::resume_unwind(err);
             }
         }
-    }
+    };
 }
 
-serial_test!{
+serial_test! {
     fn should_get_the_correct_log_level_from_env() {
         let tests = vec![
             ("LOG", "TRACE", LevelFilter::Trace),
@@ -55,7 +55,7 @@ serial_test!{
     }
 }
 
-serial_test!{
+serial_test! {
     fn log_output() {
         unsafe { log_setup(); }
 

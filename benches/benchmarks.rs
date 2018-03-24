@@ -14,10 +14,10 @@ use test::Bencher;
 
 #[bench]
 fn time_formatting_with_chrono_format(b: &mut Bencher) {
-    use chrono::format::Pad::Zero;
+    use chrono::format::Fixed::Nanosecond6;
     use chrono::format::Item::{self, Fixed, Literal, Numeric};
     use chrono::format::Numeric::{Day, Hour, Minute, Month, Second, Year};
-    use chrono::format::Fixed::Nanosecond6;
+    use chrono::format::Pad::Zero;
     const FORMAT_ITEMS: [Item<'static>; 13] = [
         Numeric(Year, Zero),
         Literal("-"),
