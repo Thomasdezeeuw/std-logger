@@ -24,7 +24,7 @@ log-panic = ["log-panics"]
 [dependencies]
 log = { version = "0.4.0-rc.1", features = ["std"] }
 chrono = { version = "0.4", optional = true }
-log-panics = { version = "1.2", optional = true, features = ["with-backtrace"] }
+log-panics = { version = "2.0", optional = true, features = ["with-backtrace"] }
 
 [dev-dependencies]
 lazy_static = "0.2.8"
