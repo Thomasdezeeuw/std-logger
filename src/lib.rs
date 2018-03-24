@@ -44,7 +44,7 @@
 //! For example:
 //!
 //! ```text
-//! 2017-08-04T12:56:48.187155+00:00 [ERROR] my_module: my error message
+//! 2018-03-24T13:48:28.820588Z [ERROR] my_module: my error message
 //! ```
 //!
 //! For requests (using the [`REQUEST_TARGET`] target when logging, logged to
@@ -57,7 +57,7 @@
 //! For example:
 //!
 //! ```text
-//! 2017-08-04T12:56:48.187182+00:00 [REQUEST]: my request message
+//! 2018-03-24T13:30:28.820588Z [REQUEST]: my request message
 //! ```
 //!
 //! Note: the timestamp is not printed when the "timestamp" feature is not
@@ -74,7 +74,7 @@
 //!
 //! The "timestamp" feature adds a timestamp in front of every message. It uses
 //! the format defined in [`RFC3339`] with 6 digit nanosecond precision, e.g.
-//! `2017-08-21T13:50:53.383553Z`. This means that the timestamp is **always**
+//! `2018-03-24T13:48:48.063934Z`. This means that the timestamp is **always**
 //! logged in UTC.
 //!
 //!
