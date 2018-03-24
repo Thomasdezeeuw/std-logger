@@ -164,10 +164,11 @@
         unused_results,
 )]
 
+extern crate log;
+
 #[cfg(feature = "timestamp")]
 extern crate chrono;
-#[macro_use]
-extern crate log;
+
 #[cfg(feature = "log-panic")]
 extern crate log_panics;
 
@@ -204,11 +205,6 @@ pub fn init() {
 
     #[cfg(feature = "log-panic")]
     log_panics::init();
-
-    #[cfg(feature = "log-panic")]
-    debug!("enabled std-logger with log level: {}, with logging of panics", filter);
-    #[cfg(not(feature = "log-panic"))]
-    debug!("enabled std-logger with log level: {}, no logging of panics", filter);
 }
 
 /// Get the maximum log level based on the environment.
