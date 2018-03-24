@@ -70,10 +70,6 @@ serial_test!{
         info!(target: REQUEST_TARGET, "request message");
 
         let want = vec![
-            #[cfg(feature = "log-panic")]
-            "[DEBUG] std_logger: enabled std-logger with log level: TRACE, with logging of panics",
-            #[cfg(not(feature = "log-panic"))]
-            "[DEBUG] std_logger: enabled std-logger with log level: TRACE, no logging of panics",
             "[TRACE] std_logger::tests: trace message",
             "[DEBUG] std_logger::tests: debug message",
             "[INFO] std_logger::tests: info message",
