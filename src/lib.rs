@@ -209,8 +209,8 @@ pub fn init() {
 
 /// Get the maximum log level based on the environment.
 fn get_max_level() -> LevelFilter {
-    let vars = ["LOG", "LOG_LEVEL"];
-    for var in &vars {
+    const VARS: [&'static str; 2] = ["LOG", "LOG_LEVEL"];
+    for var in &VARS {
         if let Ok(level) = env::var(var) {
             if let Ok(level) = level.parse() {
                 return level;
