@@ -247,8 +247,7 @@ pub fn init() {
 
 /// Get the maximum log level based on the environment.
 fn get_max_level() -> LevelFilter {
-    const VARS: [&'static str; 2] = ["LOG", "LOG_LEVEL"];
-    for var in &VARS {
+    for var in &["LOG", "LOG_LEVEL"] {
         if let Ok(level) = env::var(var) {
             if let Ok(level) = level.parse() {
                 return level;
@@ -265,7 +264,7 @@ fn get_max_level() -> LevelFilter {
     }
 }
 
-/// A simple struct which implements `Log`.
+/// Our `Log` implementation.
 struct Logger {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
@@ -333,7 +332,7 @@ fn log(record: &Record) {
     }
 }
 
-/// The function that gets called when we're unable to log a message.
+/// The function that gets called when we're unable to print a message.
 #[inline(never)]
 #[cold]
 fn log_failure(err: io::Error) {
