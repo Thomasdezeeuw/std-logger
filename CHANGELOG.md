@@ -1,5 +1,10 @@
 # Changelog
 
+## Upcoming
+
+* Improve documentation.
+* Improve performance by using a thread-local buffer for printing messages.
+
 ## v0.3.0
 
 * Update to log 0.4.1.
