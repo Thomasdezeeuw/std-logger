@@ -9,70 +9,105 @@
 //! standard out. It uses standard error for all regular messages and standard
 //! out for requests.
 //!
+//! This crate provides only a logging implementation. To do actual logging use
+//! the [`log`] crate and it's various macros.
 //!
-//! # Severity
 //!
-//! You can use various envorinment variables to change the severity (log level)
+//! # Setting severity
+//!
+//! You can use various environment variables to change the severity (log level)
 //! of the messages to actually log and which to ignore.
 //!
-//! Setting the `TRACE` variable (e.g. `TRACE=1`) sets the severity to the
-//! trace, meaning it will log everything. Setting `DEBUG` will set the severity
-//! to debug, one level higher then trace and it will not log anything with a
-//! trace severity. `LOG` and `LOG_LEVEL` can be used to set the severity to a
-//! specific value, see the [`log`]'s package `LevelFilter` enum for available
-//! values. If none of these envorinment variables are found it will default to
-//! an information severity.
+//! `LOG` and `LOG_LEVEL` can be used to set the severity to a specific value,
+//! see the [`log`]'s package `LevelFilter` type for available values.
+//!
+//! ```bash
+//! # In your shell of choose:
+//!
+//! # Set the log severity to only print log message with info severity or
+//! # higher, trace and debug messages won't be printed anymore.
+//! $ LOG=info ./my_binary
+//!
+//! # Set the log severity to only print log message with warning severity or
+//! # higher, informational (or lower severity) messages won't be printed
+//! # anymore.
+//! $ LOG=warn ./my_binary
+//! ```
+//!
+//! Alternatively setting the `TRACE` variable (e.g. `TRACE=1`) sets the
+//! severity to the trace, meaning it will log everything. Setting `DEBUG` will
+//! set the severity to debug.
+//!
+//! ```bash
+//! # In your shell of choose:
+//!
+//! # Enables trace logging.
+//! $ TRACE=1 ./my_binary
+//!
+//! # Enables debug logging.
+//! $ DEBUG=1 ./my_binary
+//! ```
+//!
+//! If none of these environment variables are found it will default to an
+//! information severity.
 //!
 //!
 //! # Logging requests
 //!
-//! To log requests a special target is provided, [`REQUEST_TARGET`], this will
-//! log these message to standard out rather then standard out. This allows for
-//! seperate processing of error messages and requests. See the
-//! [`REQUEST_TARGET`] constant for an example.
+//! To log requests a special target is provided: [`REQUEST_TARGET`]. This will
+//! cause the message to be logged to standard out, rather then standard error.
+//! This allows for separate processing of error messages and request logs.
+//!
+//! ```
+//! #[macro_use]
+//! extern crate log;
+//! extern crate std_logger;
+//!
+//! use std_logger::REQUEST_TARGET;
+//!
+//! # fn main() {
+//! info!(target: REQUEST_TARGET, "Got a request!");
+//! # }
+//! ```
 //!
 //!
 //! # Format
 //!
-//! Logs are formatted using the following format. For messages (logged to
-//! standard error):
+//! For regular messages, printed to standard error, the following format is
+//! used:
 //!
 //! ```text
 //! timestamp [LOG_LEVEL] target: message
-//! ```
 //!
 //! For example:
 //!
-//! ```text
 //! 2018-03-24T13:48:28.820588Z [ERROR] my_module: my error message
 //! ```
 //!
-//! For requests (using the [`REQUEST_TARGET`] target when logging, logged to
-//! standard out):
+//! For requests, logged using the [`REQUEST_TARGET`] target and printed to
+//! standard out, the following format is used:
 //!
 //! ```text
 //! timestamp [REQUEST]: message
-//! ```
 //!
 //! For example:
 //!
-//! ```text
 //! 2018-03-24T13:30:28.820588Z [REQUEST]: my request message
 //! ```
 //!
-//! Note: the timestamp is not printed when the "timestamp" feature is not
-//! enabled (this feature is enabled by default), see [Timestamp feature].
+//! Note: the timestamp is not printed when the *timestamp* feature is not
+//! enabled, this feature is enabled by default, see [Timestamp feature] below.
 //!
 //!
 //! # Crate features
 //!
 //! This crate has two features, both of which are enabled by default,
-//! "timestamp" and "log-panic".
+//! *timestamp* and *log-panic*.
 //!
 //!
 //! ## Timestamp feature
 //!
-//! The "timestamp" feature adds a timestamp in front of every message. It uses
+//! The *timestamp* feature adds a timestamp in front of every message. It uses
 //! the format defined in [`RFC3339`] with 6 digit nanosecond precision, e.g.
 //! `2018-03-24T13:48:48.063934Z`. This means that the timestamp is **always**
 //! logged in UTC.
@@ -80,10 +115,10 @@
 //!
 //! ## Log-panic feature
 //!
-//! The "log-panic" feature will log all panics using the `error` severity,
+//! The *log-panic* feature will log all panics using the `error` severity,
 //! rather then using the default panic handler. It will log the panic message
 //! as well as the location and a backtrace, see the log output below for an
-//! example.
+//! example (this example doesn't include a timestamp).
 //!
 //! ```log
 //! [ERROR] panic: thread 'main' panicked at 'oops': examples/panic.rs:24
@@ -107,14 +142,8 @@
 //!    8:        0x106b93c29 - main
 //! ```
 //!
-//! If the "timestamp" feature is enable the message will be prefixed with a
+//! If the *timestamp* feature is enable the message will be prefixed with a
 //! timestamp as described in the [Timestamp feature].
-//!
-//!
-//! # Note
-//!
-//! This crate provides only a logging implementation. To do actual logging use
-//! the [`log`] crate and it's various macros.
 //!
 //!
 //! # Example
@@ -124,8 +153,8 @@
 //! extern crate log;
 //! extern crate std_logger;
 //!
-//! use std::time::Duration;
-//!
+//! # use std::time::Duration;
+//! #
 //! use std_logger::REQUEST_TARGET;
 //!
 //! fn main() {
@@ -145,6 +174,8 @@
 //! #   response_time: Duration,
 //! # }
 //! #
+//! /// This our example request handler, just pretend it gets called with a
+//! /// request.
 //! fn log_handler(req: Request) {
 //!     // This will be logged to standard out, rather then standard error.
 //!     info!(target: REQUEST_TARGET, "url = {}, status = {}, response_time = {:?}",
@@ -195,7 +226,7 @@ use log::{LevelFilter, Log, Metadata, Record};
 ///
 /// See the [crate level documentation] for more.
 ///
-/// [crate level documentation]: index.html
+/// [crate level documentation]: index.html#logging-requests
 pub const REQUEST_TARGET: &'static str = "request";
 
 /// Initialise the logger.
