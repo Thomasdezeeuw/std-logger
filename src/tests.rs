@@ -12,17 +12,17 @@ use std::sync::Mutex;
 use super::*;
 
 lazy_static! {
-    /// A global lock since most tests need to run in serial.
-    static ref SERIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
+    /// A global lock since most tests need to run in sequential.
+    static ref SEQUENTIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
 }
 
-/// Macro to crate a serial test, that locks the `SERIAL_TEST_MUTEX` while
-/// testing.
-macro_rules! serial_test {
-    (fn $name: ident() $body: block) => {
+/// Macro to create a sequential test, that locks the `SEQUENTIAL_TEST_MUTEX`
+/// while testing.
+macro_rules! sequential_test {
+    (fn $name:ident() $body:block) => {
         #[test]
         fn $name() {
-            let guard = SERIAL_TEST_MUTEX.lock().unwrap();
+            let guard = SEQUENTIAL_TEST_MUTEX.lock().unwrap();
             // Catch any panics to not poisen the lock.
             if let Err(err) = panic::catch_unwind(|| $body) {
                 drop(guard);
@@ -32,7 +32,7 @@ macro_rules! serial_test {
     };
 }
 
-serial_test! {
+sequential_test! {
     fn should_get_the_correct_log_level_from_env() {
         let tests = vec![
             ("LOG", "TRACE", LevelFilter::Trace),
@@ -55,7 +55,7 @@ serial_test! {
     }
 }
 
-serial_test! {
+sequential_test! {
     fn log_output() {
         unsafe { log_setup(); }
 
@@ -112,7 +112,7 @@ serial_test! {
     }
 }
 
-/// This requires the `SERIAL_TEST_MUTEX` to be held!
+/// This requires the `SEQUENTIAL_TEST_MUTEX` to be held!
 unsafe fn log_setup() {
     use std::sync::atomic::Ordering;
 
