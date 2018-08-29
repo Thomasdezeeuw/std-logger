@@ -5,7 +5,7 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-#[macro_use]
+#[cfg_attr(feature = "log-panic", macro_use)]
 extern crate log;
 extern crate std_logger;
 
