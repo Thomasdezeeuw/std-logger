@@ -201,7 +201,7 @@
         variant_size_differences,
 )]
 
-#[cfg(not(test))]
+#[cfg_attr(test, macro_use)]
 extern crate log;
 
 #[cfg(feature = "timestamp")]
@@ -209,10 +209,6 @@ extern crate chrono;
 
 #[cfg(feature = "log-panic")]
 extern crate log_panics;
-
-#[cfg(test)]
-#[macro_use]
-extern crate log;
 
 #[cfg(test)]
 #[macro_use]
