@@ -217,10 +217,14 @@ extern crate lazy_static;
 #[cfg(test)]
 mod tests;
 
+use std::cell::RefCell;
 use std::env;
 use std::io::{self, Write};
 
 use log::{LevelFilter, Log, Metadata, Record};
+
+#[cfg(feature = "timestamp")]
+use chrono::{Datelike, Timelike};
 
 /// Target for logging requests.
 ///
@@ -284,52 +288,49 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
-/// The actual logging of a record, including a timestamp. This should be kept
-/// in sync with the same named function below.
-#[cfg(feature = "timestamp")]
+/// The actual logging of a record.
 fn log(record: &Record) {
-    use chrono::{Datelike, Timelike};
-    let timestamp = chrono::Utc::now();
-    match record.target() {
-        REQUEST_TARGET => write!(
-            &mut stdout(),
-            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [REQUEST]: {}\n",
-            timestamp.year(),
-            timestamp.month(),
-            timestamp.day(),
-            timestamp.hour(),
-            timestamp.minute(),
-            timestamp.second(),
-            timestamp.nanosecond() / 1000,
-            record.args()
-        ).unwrap_or_else(log_failure),
-        target => write!(
-            &mut stderr(),
-            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z [{}] {}: {}\n",
-            timestamp.year(),
-            timestamp.month(),
-            timestamp.day(),
-            timestamp.hour(),
-            timestamp.minute(),
-            timestamp.second(),
-            timestamp.nanosecond() / 1000,
-            record.level(),
-            target,
-            record.args()
-        ).unwrap_or_else(log_failure),
+    // Thread local buffer for `log`. This way we only lock standard out/error
+    // in a single write call.
+    thread_local! {
+        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
     }
-}
 
-/// The actual logging of a record, without a timestamp. This should be kept in
-/// sync with the same named function above.
-#[cfg(not(feature = "timestamp"))]
-fn log(record: &Record) {
-    match record.target() {
-        REQUEST_TARGET => write!(&mut stdout(), "[REQUEST]: {}\n", record.args())
-            .unwrap_or_else(log_failure),
-        target => write!(&mut stderr(), "[{}] {}: {}\n", record.level(), target, record.args())
-            .unwrap_or_else(log_failure),
-    }
+    #[cfg(feature = "timestamp")]
+    let timestamp = chrono::Utc::now();
+
+    BUFFER.with(|buffer| {
+        let mut buffer = buffer.borrow_mut();
+        buffer.clear();
+
+        #[cfg(feature = "timestamp")]
+        write!(
+            &mut buffer,
+            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z ",
+            timestamp.year(),
+            timestamp.month(),
+            timestamp.day(),
+            timestamp.hour(),
+            timestamp.minute(),
+            timestamp.second(),
+            timestamp.nanosecond() / 1000,
+        ).unwrap_or_else(log_failure);
+
+        match record.target() {
+            REQUEST_TARGET => {
+                writeln!(&mut buffer, "[REQUEST]: {}", record.args())
+                    .unwrap_or_else(log_failure);
+
+                stdout().write_all(&buffer).unwrap_or_else(log_failure);
+            },
+            target => {
+                writeln!(&mut buffer, "[{}] {}: {}", record.level(), target, record.args())
+                    .unwrap_or_else(log_failure);
+
+                stderr().write_all(&buffer).unwrap_or_else(log_failure);
+            },
+        }
+    });
 }
 
 /// The function that gets called when we're unable to print a message.
