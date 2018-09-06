@@ -1,6 +1,6 @@
 # Changelog
 
-## Upcoming
+## v0.3.1
 
 * Improve documentation.
 * Improve performance by using a thread-local buffer for printing messages.
