@@ -231,6 +231,10 @@ pub const REQUEST_TARGET: &'static str = "request";
 /// See the [crate level documentation] for more.
 ///
 /// [crate level documentation]: index.html
+///
+/// # Panics
+///
+/// This will panic if the logger fails to initialise.
 pub fn init() {
     let filter = get_max_level();
     let logger = Logger { filter };

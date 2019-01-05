@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.2
+
+* Document that `init` panics if it fails to initialise the logger, no
+  functional change but the panic was never documented.
+
 ## v0.3.1
 
 * Improve documentation.
