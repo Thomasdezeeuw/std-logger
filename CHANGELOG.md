@@ -2,6 +2,7 @@
 
 ## v0.3.2
 
+* Added `try_init`, a version of `init` that doesn't panic.
 * Document that `init` panics if it fails to initialise the logger, no
   functional change but the panic was never documented.
 

@@ -214,7 +214,7 @@ use std::cell::RefCell;
 use std::env;
 use std::io::{self, Write};
 
-use log::{LevelFilter, Log, Metadata, Record};
+use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
 #[cfg(feature = "timestamp")]
 use chrono::{Datelike, Timelike};
@@ -236,14 +236,26 @@ pub const REQUEST_TARGET: &'static str = "request";
 ///
 /// This will panic if the logger fails to initialise.
 pub fn init() {
+    try_init()
+        .unwrap_or_else(|err| panic!("failed to initialise the logger: {}", err));
+}
+
+/// Try to initialise the logger.
+///
+/// Unlike [`init`] this doesn't panic when the logger fails to initialise. See
+/// the [crate level documentation] for more.
+///
+/// [`init`]: fn.init.html
+/// [crate level documentation]: index.html
+pub fn try_init() -> Result<(), SetLoggerError> {
     let filter = get_max_level();
     let logger = Logger { filter };
-    log::set_boxed_logger(Box::new(logger))
-        .unwrap_or_else(|_| panic!("failed to initialize the logger"));
+    log::set_boxed_logger(Box::new(logger))?;
     log::set_max_level(filter);
 
     #[cfg(feature = "log-panic")]
     log_panics::init();
+    Ok(())
 }
 
 /// Get the maximum log level based on the environment.
@@ -288,7 +300,7 @@ impl Log for Logger {
 /// The actual logging of a record.
 fn log(record: &Record) {
     // Thread local buffer for `log`. This way we only lock standard out/error
-    // in a single write call.
+    // for a single write call and create half writes.
     thread_local! {
         static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
     }
