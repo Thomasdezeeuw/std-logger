@@ -1,6 +1,6 @@
 [package]
 name = "std-logger"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
 description = """
 A logging implementation for the log crate that logs messages to standard
