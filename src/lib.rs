@@ -353,6 +353,7 @@ fn stderr() -> io::Stderr {
 
 #[cfg(test)]
 mod test_instruments {
+    use std::ptr::null_mut;
     use std::io::{self, Write};
     use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 
@@ -360,17 +361,17 @@ mod test_instruments {
     // `drop_types_in_const` feature is stable, that would make all of this a
     // bit safer.
 
-    /// The output of the log macros, *if this is not null it must point to
-    /// valid memory*.
-    pub static mut LOG_OUTPUT: *mut [Option<Vec<u8>>; 10] = 0 as *mut [Option<Vec<u8>>; 10];
-
-    /// Maximum number of logs we can hold, keep in sync with above.
+    /// Maximum number of logs we can hold.
     const LOG_OUTPUT_MAX: usize = 10;
+
+    /// The output of the log macros, **if this is not null it must point to
+    /// valid memory**.
+    pub static mut LOG_OUTPUT: *mut [Option<Vec<u8>>; LOG_OUTPUT_MAX] = null_mut();
 
     /// Increase to get a position in the `LOG_OUTPUT` array.
     pub static LOG_OUTPUT_INDEX: AtomicUsize = ATOMIC_USIZE_INIT;
 
-    /// Simple wrapper around a `Vec<u8>` which add itself to `LOG_OUTPUT` when
+    /// Simple wrapper around a `Vec<u8>` which adds itself to `LOG_OUTPUT` when
     /// dropped.
     pub struct LogOutput {
         /// Must always be something, until it's dropped.
