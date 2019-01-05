@@ -4,28 +4,29 @@ use std::sync::Mutex;
 
 use super::*;
 
-lazy_static! {
-    /// A global lock since most tests need to run in sequential.
-    static ref SEQUENTIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
-}
+/// Macro to create a group of sequential tests.
+macro_rules! sequential_tests {
+    ($(fn $name:ident() $body:block)+) => {
+        lazy_static! {
+            /// A global lock for testing sequentially.
+            static ref SEQUENTIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
+        }
 
-/// Macro to create a sequential test, that locks the `SEQUENTIAL_TEST_MUTEX`
-/// while testing.
-macro_rules! sequential_test {
-    (fn $name:ident() $body:block) => {
+        $(
         #[test]
         fn $name() {
             let guard = SEQUENTIAL_TEST_MUTEX.lock().unwrap();
-            // Catch any panics to not poisen the lock.
+            // Catch any panics to not poison the lock.
             if let Err(err) = panic::catch_unwind(|| $body) {
                 drop(guard);
                 panic::resume_unwind(err);
             }
         }
+        )+
     };
 }
 
-sequential_test! {
+sequential_tests! {
     fn should_get_the_correct_log_level_from_env() {
         let tests = vec![
             ("LOG", "TRACE", LevelFilter::Trace),
@@ -46,9 +47,7 @@ sequential_test! {
             env::remove_var(test.0);
         }
     }
-}
 
-sequential_test! {
     fn log_output() {
         unsafe { log_setup(); }
 
