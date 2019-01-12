@@ -1,7 +1,4 @@
-#[macro_use]
-extern crate log;
-extern crate std_logger;
-
+use log::{error, info};
 use std_logger::REQUEST_TARGET;
 
 fn main() {
