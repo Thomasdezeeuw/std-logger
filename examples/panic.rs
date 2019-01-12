@@ -1,9 +1,7 @@
-#[cfg_attr(feature = "log-panic", macro_use)]
-extern crate log;
-extern crate std_logger;
-
 #[cfg(feature = "log-panic")]
 fn main() {
+    use log::info;
+
     // Initialize the logger.
     std_logger::init();
 
