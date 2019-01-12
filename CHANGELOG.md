@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.3
+
+* Updates to Rust 2018.
+* **BREAKING** Requires Rust 1.31 or higher to compile.
+
 ## v0.3.2
 
 * Added `try_init`, a version of `init` that doesn't panic.

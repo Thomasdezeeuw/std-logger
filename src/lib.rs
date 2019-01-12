@@ -194,19 +194,6 @@
         variant_size_differences,
 )]
 
-#[cfg_attr(test, macro_use)]
-extern crate log;
-
-#[cfg(feature = "timestamp")]
-extern crate chrono;
-
-#[cfg(feature = "log-panic")]
-extern crate log_panics;
-
-#[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
-
 #[cfg(test)]
 mod tests;
 
@@ -433,4 +420,4 @@ mod test_instruments {
 }
 
 #[cfg(test)]
-use test_instruments::{stderr, stdout, LOG_OUTPUT, LOG_OUTPUT_INDEX};
+use self::test_instruments::{stderr, stdout, LOG_OUTPUT, LOG_OUTPUT_INDEX};
