@@ -194,9 +194,6 @@
         variant_size_differences,
 )]
 
-#[cfg(test)]
-mod tests;
-
 use std::cell::RefCell;
 use std::env;
 use std::io::{self, Write};
@@ -205,6 +202,9 @@ use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
 #[cfg(feature = "timestamp")]
 use chrono::{Datelike, Timelike};
+
+#[cfg(test)]
+mod tests;
 
 /// Target for logging requests.
 ///
@@ -287,7 +287,7 @@ impl Log for Logger {
 /// The actual logging of a record.
 fn log(record: &Record) {
     // Thread local buffer for `log`. This way we only lock standard out/error
-    // for a single write call and create half writes.
+    // for a single write call and don't create half written logs.
     thread_local! {
         static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
     }
