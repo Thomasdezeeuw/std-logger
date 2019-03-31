@@ -211,7 +211,7 @@ mod tests;
 /// See the [crate level documentation] for more.
 ///
 /// [crate level documentation]: index.html#logging-requests
-pub const REQUEST_TARGET: &'static str = "request";
+pub const REQUEST_TARGET: &str = "request";
 
 /// Initialise the logger.
 ///
@@ -368,8 +368,8 @@ fn stderr() -> io::Stderr {
 
 #[cfg(test)]
 mod test_instruments {
-    use std::ptr::null_mut;
     use std::io::{self, Write};
+    use std::ptr::null_mut;
     use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 
     // TODO: replace `LOG_OUTPUT` with type `[Option<Vec<u8>>; 10]`, once the
