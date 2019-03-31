@@ -30,4 +30,9 @@ chrono     = { version = "0.4", optional = true }
 log-panics = { version = "2", optional = true, features = ["with-backtrace"] }
 
 [dev-dependencies]
+criterion   = "0.2"
 lazy_static = "1.0"
+
+[[bench]]
+name = "time_format"
+harness = false
