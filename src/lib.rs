@@ -317,16 +317,28 @@ fn log(record: &Record) {
                 writeln!(&mut buffer, "[REQUEST]: {}", record.args())
                     .unwrap_or_else(log_failure);
 
-                stdout().write_all(&buffer).unwrap_or_else(log_failure);
+                write_once(stdout(), &buffer).unwrap_or_else(log_failure);
             },
             target => {
                 writeln!(&mut buffer, "[{}] {}: {}", record.level(), target, record.args())
                     .unwrap_or_else(log_failure);
 
-                stderr().write_all(&buffer).unwrap_or_else(log_failure);
+                write_once(stderr(), &buffer).unwrap_or_else(log_failure);
             },
         }
     });
+}
+
+/// Write the entire `buf`fer into the `output` or return an error.
+#[inline(always)]
+fn write_once<W>(mut output: W, buf: &[u8]) -> io::Result<()>
+    where W: Write,
+{
+    output.write(buf).and_then(|written| if written != buf.len() {
+        Err(io::ErrorKind::WriteZero.into())
+    } else {
+        Ok(())
+    })
 }
 
 /// The function that gets called when we're unable to print a message.
