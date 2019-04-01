@@ -2,6 +2,9 @@
 
 ## v0.3.3
 
+* Only call write once, before it would use `write_all` which calls `write` in
+  a loop. Now it errors (panics) if the entire message can't be written in one
+  write call.
 * Updates to Rust 2018.
 * **BREAKING** Requires Rust 1.31 or higher to compile.
 
