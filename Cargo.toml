@@ -12,7 +12,7 @@ repository    = "https://github.com/Thomasdezeeuw/std-logger"
 readme        = "README.md"
 keywords      = ["logging", "log", "standard"]
 categories    = ["development-tools::debugging"]
-include       = ["./Cargo.toml", "./src/lib.rs", "./README.md", "./LICENSE-MIT", "./LICENSE-APACHE"]
+include       = ["Cargo.toml", "src/lib.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2018"
 
 [badges]
