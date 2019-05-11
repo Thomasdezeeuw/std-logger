@@ -286,10 +286,10 @@ impl Log for Logger {
 
 /// The actual logging of a record.
 fn log(record: &Record) {
-    // Thread local buffer for `log`. This way we only lock standard out/error
+    // Thread local buffer for logging. This way we only lock standard out/error
     // for a single write call and don't create half written logs.
     thread_local! {
-        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::new());
+        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(1024));
     }
 
     #[cfg(feature = "timestamp")]
