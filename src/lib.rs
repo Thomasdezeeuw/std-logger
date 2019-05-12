@@ -52,10 +52,7 @@
 //! This allows for separate processing of error messages and request logs.
 //!
 //! ```
-//! #[macro_use]
-//! extern crate log;
-//! extern crate std_logger;
-//!
+//! use log::info;
 //! use std_logger::REQUEST_TARGET;
 //!
 //! # fn main() {
@@ -142,12 +139,9 @@
 //! # Example
 //!
 //! ```
-//! #[macro_use]
-//! extern crate log;
-//! extern crate std_logger;
-//!
 //! # use std::time::Duration;
 //! #
+//! use log::info;
 //! use std_logger::REQUEST_TARGET;
 //!
 //! fn main() {
@@ -158,7 +152,9 @@
 //!     // Now we can start logging!
 //!     info!("Our application started!");
 //!
-//!     // Do useful stuff, like starting a HTTP server
+//!     // Do useful stuff, like starting a HTTP server.
+//! #   log_handler(Request { url: "/some_page".to_owned(), status: 200,
+//! #       response_time: Duration::from_millis(100) });
 //! }
 //!
 //! # struct Request {
