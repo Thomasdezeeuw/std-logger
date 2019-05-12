@@ -1,5 +1,9 @@
 # Changelog
 
+## Upcoming
+
+* Changed examples to use Rust 2018.
+
 ## v0.3.3
 
 * Only call write once, before it would use `write_all` which calls `write` in
@@ -23,7 +27,7 @@
 
 * Update to log 0.4.1.
 * Update to log-panics 2.0.
-* Update to lazy_static 1.0 (test only).
+* Update to lazy\_static 1.0 (test only).
 * Expanded documentation.
 * Don't log anything in `init`.
 
