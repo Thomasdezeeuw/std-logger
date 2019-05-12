@@ -1,4 +1,4 @@
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn chrono_format(c: &mut Criterion) {
     use chrono::format::Fixed::Nanosecond6;
