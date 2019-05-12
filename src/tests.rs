@@ -1,11 +1,11 @@
 use std::default::Default;
 use std::sync::Mutex;
-use std::{panic, str};
+use std::{env, panic, str};
 
 use lazy_static::lazy_static;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, trace, warn, LevelFilter};
 
-use crate::*;
+use crate::{get_max_level, init, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
