@@ -132,8 +132,8 @@
 //!    8:        0x106b93c29 - main
 //! ```
 //!
-//! If the *timestamp* feature is enable the message will be prefixed with a
-//! timestamp as described in the [Timestamp feature].
+//! If the *timestamp* feature is enable the first line of the message will be
+//! prefixed with a timestamp as described in the [Timestamp feature].
 //!
 //!
 //! # Example
@@ -217,7 +217,8 @@ pub const REQUEST_TARGET: &str = "request";
 ///
 /// # Panics
 ///
-/// This will panic if the logger fails to initialise.
+/// This will panic if the logger fails to initialise. Use [`try_init`] if you
+/// want to handle the error yourself.
 pub fn init() {
     try_init()
         .unwrap_or_else(|err| panic!("failed to initialise the logger: {}", err));
