@@ -5,7 +5,7 @@ use std::{env, panic, str};
 use lazy_static::lazy_static;
 use log::{debug, error, info, trace, warn, LevelFilter};
 
-use crate::{get_max_level, init, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
+use crate::{get_log_targets, get_max_level, init, Targets, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -150,6 +150,8 @@ unsafe fn log_setup() {
 
 #[cfg(feature = "timestamp")]
 fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got: &str) -> String {
+    use chrono::{Datelike, Timelike};
+
     // Add the timestamp to the expected string.
     let timestamp = format!(
         "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}Z",
