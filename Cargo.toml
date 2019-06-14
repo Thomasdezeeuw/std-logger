@@ -25,8 +25,9 @@ log-panic = ["log-panics"]
 timestamp = ["chrono"]
 
 [dependencies]
-log        = { version = "0.4", features = ["std"] }
 chrono     = { version = "0.4", optional = true }
+libc       = { version = "0.2.58" }
+log        = { version = "0.4", features = ["std"] }
 log-panics = { version = "2", optional = true, features = ["with-backtrace"] }
 
 [dev-dependencies]
