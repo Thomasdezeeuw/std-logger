@@ -129,8 +129,6 @@ unsafe fn log_setup() {
 
 #[cfg(feature = "timestamp")]
 fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got: &str) -> String {
-    use chrono::{Datelike, Timelike};
-
     // Add the timestamp to the expected string.
     let timestamp = format!(
         "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}Z",
