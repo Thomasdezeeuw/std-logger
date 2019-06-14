@@ -1,8 +1,10 @@
 # Changelog
 
-## Upcoming
+## v0.3.4
 
 * Changed examples to use Rust 2018.
+* Add log filtering by using `LOG_TARGET`.
+* Write directly to stdout/stderr, not using the standard library's locks.
 
 ## v0.3.3
 
