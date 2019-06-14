@@ -370,7 +370,7 @@ fn stderr() -> io::Stderr {
 mod test_instruments {
     use std::io::{self, Write};
     use std::ptr::null_mut;
-    use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     // TODO: replace `LOG_OUTPUT` with type `[Option<Vec<u8>>; 10]`, once the
     // `drop_types_in_const` feature is stable, that would make all of this a
@@ -384,7 +384,7 @@ mod test_instruments {
     pub static mut LOG_OUTPUT: *mut [Option<Vec<u8>>; LOG_OUTPUT_MAX] = null_mut();
 
     /// Increase to get a position in the `LOG_OUTPUT` array.
-    pub static LOG_OUTPUT_INDEX: AtomicUsize = ATOMIC_USIZE_INIT;
+    pub static LOG_OUTPUT_INDEX: AtomicUsize = AtomicUsize::new(0);
 
     /// Simple wrapper around a `Vec<u8>` which adds itself to `LOG_OUTPUT` when
     /// dropped.
