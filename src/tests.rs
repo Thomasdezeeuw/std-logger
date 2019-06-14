@@ -104,6 +104,7 @@ sequential_tests! {
                     let got = got.as_ref().unwrap();
                     let got = str::from_utf8(got).expect("unable to parse string").trim();
 
+                    #[allow(unused_mut)]
                     let mut want = (*want).to_owned();
                     #[cfg(feature = "timestamp")]
                     { want = add_timestamp(want, timestamp, got); }
