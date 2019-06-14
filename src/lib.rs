@@ -61,6 +61,36 @@
 //! ```
 //!
 //!
+//! # Limiting logging targets
+//!
+//! Sometimes it's useful to only log messages related to a specific target, for
+//! example when debugging a single function you might want only see messages
+//! from the module the function is in. This can be achieved by using the
+//! `LOG_TARGET` environment variable.
+//!
+//! ```bash
+//! # In your shell of choose:
+//!
+//! # Only log messages from your crate.
+//! $ LOG_TARGET=my_crate ./my_binary
+//!
+//! # Only log messages from the `my_module` module in your crate.
+//! $ LOG_TARGET=my_crate::my_module ./my_binary
+//!
+//! # Multiple log targets are also supported by separating the values by a
+//! # comma.
+//! $ LOG_TARGET=my_crate::my_module,my_crate::my_other_module ./my_binary
+//!
+//! # Very useful in combination with trace severity to get all messages you
+//! # want, but filter out the message you don't need.
+//! $ LOG_LEVEL=trace LOG_TARGET=my_crate::my_module ./my_binary
+//! ```
+//!
+//! Note that [requests] are always logged.
+//!
+//! [requests]: index.html#logging-requests
+//!
+//!
 //! # Format
 //!
 //! For regular messages, printed to standard error, the following format is
@@ -233,7 +263,8 @@ pub fn init() {
 /// [crate level documentation]: index.html
 pub fn try_init() -> Result<(), SetLoggerError> {
     let filter = get_max_level();
-    let logger = Logger { filter };
+    let targets = get_log_targets();
+    let logger = Logger { filter, targets };
     log::set_boxed_logger(Box::new(logger))?;
     log::set_max_level(filter);
 
@@ -261,15 +292,56 @@ fn get_max_level() -> LevelFilter {
     }
 }
 
+/// Get the targets to log, if any.
+fn get_log_targets() -> Targets {
+    match env::var("LOG_TARGET") {
+        Ok(ref targets) if !targets.is_empty() =>
+            Targets::Only(targets.split(',')
+                .map(|target| target.to_owned())
+                .collect()),
+        _ => Targets::All,
+    }
+}
+
 /// Our `Log` implementation.
 struct Logger {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
+    /// What logging targets to log.
+    targets: Targets,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum Targets {
+    /// Log all targets.
+    All,
+    /// Only log certain targets.
+    Only(Vec<String>),
+}
+
+impl Targets {
+    /// Returns true if all targets should be logged, or if the target of the
+    /// `metadata` should be logger.
+    fn should_log(&self, target: &str) -> bool {
+        if target == REQUEST_TARGET {
+            // Always log requests.
+            true
+        } else if let Targets::Only(targets) = self {
+            // Log all targets that start with an allowed target. This way we
+            // can just use `LOG_TARGET=my_crate`, rather then
+            // `LOG_TARGET=my_crate::module1,my_crate::module2` etc.
+            targets.iter().any(|log_target| target.starts_with(log_target))
+        } else {
+            // All targets should be logged.
+            true
+        }
+    }
 }
 
 impl Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         self.filter >= metadata.level()
+            && self.targets.should_log(metadata.target())
     }
 
     fn log(&self, record: &Record) {
@@ -332,6 +404,8 @@ fn write_once<W>(mut output: W, buf: &[u8]) -> io::Result<()>
     where W: Write,
 {
     output.write(buf).and_then(|written| if written != buf.len() {
+        // Not completely correct when going by the name alone, but it's the
+        // closest we can get to a descriptive error.
         Err(io::ErrorKind::WriteZero.into())
     } else {
         Ok(())
