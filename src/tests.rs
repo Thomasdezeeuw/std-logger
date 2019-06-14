@@ -51,6 +51,26 @@ sequential_tests! {
         }
     }
 
+    fn should_get_correct_log_targets() {
+        let tests = vec![
+            ("", Targets::All),
+            ("crate1", Targets::Only(vec!["crate1".to_owned()])),
+            ("crate1::mod1", Targets::Only(vec!["crate1::mod1".to_owned()])),
+            ("crate1,crate2", Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()])),
+        ];
+
+        for test in tests {
+            env::set_var("LOG_TARGET", test.0);
+
+            let want = test.1;
+            let got = get_log_targets();
+            assert_eq!(want, got);
+        }
+
+        env::remove_var("LOG_TARGET");
+        assert_eq!(get_log_targets(), Targets::All);
+    }
+
     fn log_output() {
         unsafe { log_setup(); }
 
@@ -141,4 +161,29 @@ fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got:
         &got[20..26]
     );
     format!("{} {}", timestamp, message)
+}
+
+#[test]
+fn targets_should_log() {
+    let targets = vec![
+        Targets::All,
+        Targets::Only(vec!["crate1".to_owned()]),
+        Targets::Only(vec!["crate1::mod1".to_owned()]),
+        Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()]),
+    ];
+
+    let tests = vec![
+        ("", vec![true, false, false, false]),
+        ("crate1", vec![true, true, false, true]),
+        ("crate1::mod1", vec![true, true, true, true]),
+        ("crate2", vec![true, false, false, true]),
+        ("crate2::mod2", vec![true, false, false, true]),
+    ];
+
+    for (test_target, wanted) in tests {
+        for (target, want) in targets.iter().zip(wanted) {
+            assert_eq!(target.should_log(test_target), want,
+                "targets to log: {:?}, logging target: {}", target, test_target)
+        }
+    }
 }
