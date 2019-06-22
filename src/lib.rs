@@ -172,7 +172,7 @@
 //! # use std::time::Duration;
 //! #
 //! use log::info;
-//! use std_logger::REQUEST_TARGET;
+//! use std_logger::request;
 //!
 //! fn main() {
 //!     // First thing we need to do is initialise the logger before anything
@@ -207,17 +207,18 @@
 //! [`RFC3339`]: https://tools.ietf.org/html/rfc3339
 //! [Timestamp feature]: #timestamp-feature
 
-#![warn(anonymous_parameters,
-        bare_trait_objects,
-        missing_debug_implementations,
-        missing_docs,
-        trivial_casts,
-        trivial_numeric_casts,
-        unused_extern_crates,
-        unused_import_braces,
-        unused_qualifications,
-        unused_results,
-        variant_size_differences,
+#![warn(
+    anonymous_parameters,
+    bare_trait_objects,
+    missing_debug_implementations,
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_qualifications,
+    unused_results,
+    variant_size_differences
 )]
 
 use std::cell::RefCell;
@@ -267,8 +268,7 @@ macro_rules! request {
 /// This will panic if the logger fails to initialise. Use [`try_init`] if you
 /// want to handle the error yourself.
 pub fn init() {
-    try_init()
-        .unwrap_or_else(|err| panic!("failed to initialise the logger: {}", err));
+    try_init().unwrap_or_else(|err| panic!("failed to initialise the logger: {}", err));
 }
 
 /// Try to initialise the logger.
@@ -312,10 +312,9 @@ fn get_max_level() -> LevelFilter {
 /// Get the targets to log, if any.
 fn get_log_targets() -> Targets {
     match env::var("LOG_TARGET") {
-        Ok(ref targets) if !targets.is_empty() =>
-            Targets::Only(targets.split(',')
-                .map(|target| target.to_owned())
-                .collect()),
+        Ok(ref targets) if !targets.is_empty() => {
+            Targets::Only(targets.split(',').map(|target| target.to_owned()).collect())
+        }
         _ => Targets::All,
     }
 }
@@ -347,7 +346,9 @@ impl Targets {
             // Log all targets that start with an allowed target. This way we
             // can just use `LOG_TARGET=my_crate`, rather then
             // `LOG_TARGET=my_crate::module1,my_crate::module2` etc.
-            targets.iter().any(|log_target| target.starts_with(log_target))
+            targets
+                .iter()
+                .any(|log_target| target.starts_with(log_target))
         } else {
             // All targets should be logged.
             true
@@ -357,8 +358,7 @@ impl Targets {
 
 impl Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        self.filter >= metadata.level()
-            && self.targets.should_log(metadata.target())
+        self.filter >= metadata.level() && self.targets.should_log(metadata.target())
     }
 
     fn log(&self, record: &Record) {
@@ -396,21 +396,27 @@ fn log(record: &Record) {
             timestamp.minute(),
             timestamp.second(),
             timestamp.nanosecond() / 1000,
-        ).unwrap_or_else(log_failure);
+        )
+        .unwrap_or_else(log_failure);
 
         match record.target() {
             REQUEST_TARGET => {
-                writeln!(&mut buffer, "[REQUEST]: {}", record.args())
-                    .unwrap_or_else(log_failure);
+                writeln!(&mut buffer, "[REQUEST]: {}", record.args()).unwrap_or_else(log_failure);
 
                 write_once(stdout(), &buffer).unwrap_or_else(log_failure);
-            },
+            }
             target => {
-                writeln!(&mut buffer, "[{}] {}: {}", record.level(), target, record.args())
-                    .unwrap_or_else(log_failure);
+                writeln!(
+                    &mut buffer,
+                    "[{}] {}: {}",
+                    record.level(),
+                    target,
+                    record.args()
+                )
+                .unwrap_or_else(log_failure);
 
                 write_once(stderr(), &buffer).unwrap_or_else(log_failure);
-            },
+            }
         }
     });
 }
@@ -418,14 +424,17 @@ fn log(record: &Record) {
 /// Write the entire `buf`fer into the `output` or return an error.
 #[inline(always)]
 fn write_once<W>(mut output: W, buf: &[u8]) -> io::Result<()>
-    where W: Write,
+where
+    W: Write,
 {
-    output.write(buf).and_then(|written| if written != buf.len() {
-        // Not completely correct when going by the name alone, but it's the
-        // closest we can get to a descriptive error.
-        Err(io::ErrorKind::WriteZero.into())
-    } else {
-        Ok(())
+    output.write(buf).and_then(|written| {
+        if written != buf.len() {
+            // Not completely correct when going by the name alone, but it's the
+            // closest we can get to a descriptive error.
+            Err(io::ErrorKind::WriteZero.into())
+        } else {
+            Ok(())
+        }
     })
 }
 
@@ -446,7 +455,13 @@ struct Stdout;
 #[cfg(not(test))]
 impl Write for Stdout {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match unsafe { libc::write(libc::STDOUT_FILENO, buf.as_ptr() as *const libc::c_void, buf.len()) } {
+        match unsafe {
+            libc::write(
+                libc::STDOUT_FILENO,
+                buf.as_ptr() as *const libc::c_void,
+                buf.len(),
+            )
+        } {
             n if n < 0 => Err(io::Error::last_os_error()),
             n => Ok(n as usize),
         }
@@ -470,7 +485,13 @@ struct Stderr;
 #[cfg(not(test))]
 impl Write for Stderr {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match unsafe { libc::write(libc::STDERR_FILENO, buf.as_ptr() as *const libc::c_void, buf.len()) } {
+        match unsafe {
+            libc::write(
+                libc::STDERR_FILENO,
+                buf.as_ptr() as *const libc::c_void,
+                buf.len(),
+            )
+        } {
             n if n < 0 => Err(io::Error::last_os_error()),
             n => Ok(n as usize),
         }
@@ -546,12 +567,16 @@ mod test_instruments {
 
     #[inline(always)]
     pub fn stdout() -> LogOutput {
-        LogOutput { inner: Some(Vec::new()) }
+        LogOutput {
+            inner: Some(Vec::new()),
+        }
     }
 
     #[inline(always)]
     pub fn stderr() -> LogOutput {
-        LogOutput { inner: Some(Vec::new()) }
+        LogOutput {
+            inner: Some(Vec::new()),
+        }
     }
 }
 
