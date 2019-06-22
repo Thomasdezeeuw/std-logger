@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+* Added `request!` macro, a convenient way to log requests.
+
 ## v0.3.4
 
 * Changed examples to use Rust 2018.
@@ -29,7 +33,7 @@
 
 * Update to log 0.4.1.
 * Update to log-panics 2.0.
-* Update to lazy\_static 1.0 (test only).
+* Update to lazy_static 1.0 (test only).
 * Expanded documentation.
 * Don't log anything in `init`.
 

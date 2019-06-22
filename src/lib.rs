@@ -47,16 +47,16 @@
 //!
 //! # Logging requests
 //!
-//! To log requests a special target is provided: [`REQUEST_TARGET`]. This will
-//! cause the message to be logged to standard out, rather then standard error.
-//! This allows for separate processing of error messages and request logs.
+//! To log requests a special target is provided: [`REQUEST_TARGET`] and a
+//! special macro: [`request`]. This will cause the message to be logged to
+//! standard out, rather then standard error. This allows for separate
+//! processing of error messages and request logs.
 //!
 //! ```
-//! use log::info;
-//! use std_logger::REQUEST_TARGET;
+//! use std_logger::request;
 //!
 //! # fn main() {
-//! info!(target: REQUEST_TARGET, "Got a request!");
+//! request!("Got a request!");
 //! # }
 //! ```
 //!
@@ -104,8 +104,8 @@
 //! 2018-03-24T13:48:28.820588Z [ERROR] my_module: my error message
 //! ```
 //!
-//! For requests, logged using the [`REQUEST_TARGET`] target and printed to
-//! standard out, the following format is used:
+//! For requests, logged using the [`REQUEST_TARGET`] target or the [`request`]
+//! macro and printed to standard out, the following format is used:
 //!
 //! ```text
 //! timestamp [REQUEST]: message
@@ -197,7 +197,7 @@
 //! /// request.
 //! fn log_handler(req: Request) {
 //!     // This will be logged to standard out, rather then standard error.
-//!     info!(target: REQUEST_TARGET, "url = {}, status = {}, response_time = {:?}",
+//!     request!("url = {}, status = {}, response_time = {:?}",
 //!         req.url, req.status, req.response_time);
 //! }
 //! ```
@@ -234,10 +234,27 @@ mod tests;
 
 /// Target for logging requests.
 ///
+/// The [`request`] macro provides a convenient way to log requests, it better
+/// to use that.
+///
 /// See the [crate level documentation] for more.
 ///
 /// [crate level documentation]: index.html#logging-requests
 pub const REQUEST_TARGET: &str = "request";
+
+/// Logs a request.
+///
+/// This uses [info] level severity and the [`REQUEST_TARGET`] target to log a
+/// request. See the [crate level documentation] for more.
+///
+/// [info]: log::Level::Info
+/// [crate level documentation]: index.html#logging-requests
+#[macro_export]
+macro_rules! request {
+    ($($arg:tt)*) => (
+        log::log!(target: $crate::REQUEST_TARGET, log::Level::Info, $($arg)*);
+    )
+}
 
 /// Initialise the logger.
 ///
