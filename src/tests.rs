@@ -5,7 +5,7 @@ use std::{env, panic, str};
 use lazy_static::lazy_static;
 use log::{debug, error, info, trace, warn, LevelFilter};
 
-use crate::{get_log_targets, get_max_level, init, Targets, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
+use crate::{get_log_targets, get_max_level, init, request, Targets, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -82,7 +82,8 @@ sequential_tests! {
         info!("info message");
         warn!("warn message");
         error!("error message");
-        info!(target: REQUEST_TARGET, "request message");
+        info!(target: REQUEST_TARGET, "request message1");
+        request!("request message2");
 
         let want = vec![
             "[TRACE] std_logger::tests: trace message",
@@ -90,7 +91,8 @@ sequential_tests! {
             "[INFO] std_logger::tests: info message",
             "[WARN] std_logger::tests: warn message",
             "[ERROR] std_logger::tests: error message",
-            "[REQUEST]: request message",
+            "[REQUEST]: request message1",
+            "[REQUEST]: request message2",
         ];
         let mut got = unsafe {
             (&*LOG_OUTPUT).iter()

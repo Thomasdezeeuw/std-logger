@@ -1,5 +1,5 @@
-use log::{error, info};
-use std_logger::REQUEST_TARGET;
+use log::error;
+use std_logger::request;
 
 fn main() {
     // Initialize the logger.
@@ -39,7 +39,7 @@ fn logger_middleware(request: Request) -> Response {
 
     // Log the request using the special request target. This will log it to
     // standard out rather then standard error.
-    info!(target: REQUEST_TARGET, "url = `{}`, method = `{}`, status_code = {}, body_size = {}",
+    request!("url = `{}`, method = `{}`, status_code = {}, body_size = {}",
           url, method, response.status_code, response.body.len());
 
     if response.status_code == 404 {
