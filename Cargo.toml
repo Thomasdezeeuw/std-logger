@@ -27,7 +27,7 @@ timestamp = ["chrono"]
 [dependencies]
 chrono     = { version = "0.4", optional = true }
 libc       = { version = "0.2.58" }
-log        = { version = "0.4", features = ["std"] }
+log        = { version = "0.4.8", features = ["std", "kv_unstable"] }
 log-panics = { version = "2", optional = true, features = ["with-backtrace"] }
 
 [dev-dependencies]
