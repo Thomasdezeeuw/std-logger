@@ -419,7 +419,8 @@ fn log(record: &Record) {
             REQUEST_TARGET => {
                 writeln!(
                     &mut buffer,
-                    "[REQUEST]: {}{}",
+                    "[REQUEST] {}: {}{}",
+                    record.module_path().unwrap_or(""),
                     record.args(),
                     KeyValuePrinter(record.key_values())
                 )

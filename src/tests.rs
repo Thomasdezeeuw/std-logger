@@ -5,7 +5,10 @@ use std::{env, panic, str};
 use lazy_static::lazy_static;
 use log::{debug, error, info, trace, warn, LevelFilter};
 
-use crate::{get_log_targets, get_max_level, init, request, Targets, LOG_OUTPUT, LOG_OUTPUT_INDEX, REQUEST_TARGET};
+use crate::{
+    get_log_targets, get_max_level, init, request, Targets, LOG_OUTPUT, LOG_OUTPUT_INDEX,
+    REQUEST_TARGET,
+};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -91,8 +94,8 @@ sequential_tests! {
             "[INFO] std_logger::tests: info message",
             "[WARN] std_logger::tests: warn message",
             "[ERROR] std_logger::tests: error message",
-            "[REQUEST]: request message1",
-            "[REQUEST]: request message2",
+            "[REQUEST] std_logger::tests: request message1",
+            "[REQUEST] std_logger::tests: request message2",
         ];
         let mut got = unsafe {
             (&*LOG_OUTPUT).iter()
@@ -187,8 +190,13 @@ fn targets_should_log() {
 
     for (test_target, wanted) in tests {
         for (target, want) in targets.iter().zip(wanted) {
-            assert_eq!(target.should_log(test_target), want,
-                "targets to log: {:?}, logging target: {}", target, test_target)
+            assert_eq!(
+                target.should_log(test_target),
+                want,
+                "targets to log: {:?}, logging target: {}",
+                target,
+                test_target
+            )
         }
     }
 }
