@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* **BREAKING** updated minimum supported Rust version to 1.33.
 * Added `request!` macro, a convenient way to log requests.
 
 ## v0.3.4
