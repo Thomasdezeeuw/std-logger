@@ -207,19 +207,7 @@
 //! [`RFC3339`]: https://tools.ietf.org/html/rfc3339
 //! [Timestamp feature]: #timestamp-feature
 
-#![warn(
-    anonymous_parameters,
-    bare_trait_objects,
-    missing_debug_implementations,
-    missing_docs,
-    trivial_casts,
-    trivial_numeric_casts,
-    unused_extern_crates,
-    unused_import_braces,
-    unused_qualifications,
-    unused_results,
-    variant_size_differences
-)]
+#![warn(missing_debug_implementations, missing_docs, unused_results)]
 
 use std::cell::RefCell;
 use std::io::{self, Write};
@@ -336,8 +324,7 @@ enum Targets {
 }
 
 impl Targets {
-    /// Returns true if all targets should be logged, or if the target of the
-    /// `metadata` should be logger.
+    /// Returns `true` if the `target` should be logged.
     fn should_log(&self, target: &str) -> bool {
         if target == REQUEST_TARGET {
             // Always log requests.
