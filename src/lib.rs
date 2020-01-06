@@ -353,7 +353,12 @@ impl Log for Logger {
         }
     }
 
-    fn flush(&self) {}
+    fn flush(&self) {
+        // Can't handle the errors here and we likely can't log them either
+        // because that also goes through std out/err, so we can't do much here.
+        let _ = stdout().flush();
+        let _ = stderr().flush();
+    }
 }
 
 /// The actual logging of a record.
