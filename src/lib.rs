@@ -406,65 +406,10 @@ fn log_failure(err: io::Error) {
 // though the return type of the functions are different we only need them both
 // to implement `io::Write`.
 
+#[cfg(test)]
+use self::test_instruments::{stderr, stdout, LOG_OUTPUT, LOG_OUTPUT_INDEX};
 #[cfg(not(test))]
-struct Stdout;
-
-#[cfg(not(test))]
-impl Write for Stdout {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match unsafe {
-            libc::write(
-                libc::STDOUT_FILENO,
-                buf.as_ptr() as *const libc::c_void,
-                buf.len(),
-            )
-        } {
-            n if n < 0 => Err(io::Error::last_os_error()),
-            n => Ok(n as usize),
-        }
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        // Don't have to flush standard out.
-        Ok(())
-    }
-}
-
-#[cfg(not(test))]
-#[inline(always)]
-fn stdout() -> Stdout {
-    Stdout
-}
-
-#[cfg(not(test))]
-struct Stderr;
-
-#[cfg(not(test))]
-impl Write for Stderr {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match unsafe {
-            libc::write(
-                libc::STDERR_FILENO,
-                buf.as_ptr() as *const libc::c_void,
-                buf.len(),
-            )
-        } {
-            n if n < 0 => Err(io::Error::last_os_error()),
-            n => Ok(n as usize),
-        }
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        // Don't have to flush standard error.
-        Ok(())
-    }
-}
-
-#[cfg(not(test))]
-#[inline(always)]
-fn stderr() -> Stderr {
-    Stderr
-}
+use std::io::{stderr, stdout};
 
 // The testing variant of the functions.
 
@@ -536,6 +481,3 @@ mod test_instruments {
         }
     }
 }
-
-#[cfg(test)]
-use self::test_instruments::{stderr, stdout, LOG_OUTPUT, LOG_OUTPUT_INDEX};
