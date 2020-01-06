@@ -37,3 +37,7 @@ lazy_static = "1.0"
 [[bench]]
 name = "time_format"
 harness = false
+
+[[bench]]
+name = "standard_out"
+harness = false
