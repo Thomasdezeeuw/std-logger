@@ -210,13 +210,12 @@
 #![warn(missing_debug_implementations, missing_docs, unused_results)]
 
 use std::cell::RefCell;
+use std::env;
 use std::io::{self, Write};
-use std::{env, fmt};
 
-use log::{kv, LevelFilter, Log, Metadata, Record, SetLoggerError};
+use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
-#[cfg(feature = "timestamp")]
-use chrono::{Datelike, Timelike};
+mod format;
 
 #[cfg(test)]
 mod tests;
@@ -357,91 +356,25 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
-/// Prints key values in ": key1=value1, key2=value2" format.
-///
-/// # Notes
-///
-/// Prints ": " itself, only when there is at least one key value pair.
-struct KeyValuePrinter<'a>(&'a dyn kv::Source);
-
-impl<'a> fmt::Display for KeyValuePrinter<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0
-            .visit(&mut KeyValueVisitor(true, f))
-            .map_err(|_| fmt::Error)
-    }
-}
-
-struct KeyValueVisitor<'a, 'b>(bool, &'a mut fmt::Formatter<'b>);
-
-impl<'a, 'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'a, 'b> {
-    fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
-        self.1
-            .write_str(if self.0 { ": " } else { ", " })
-            .and_then(|()| {
-                self.0 = false;
-                write!(self.1, "{}={}", key, value)
-            })
-            .map_err(Into::into)
-    }
-}
-
 /// The actual logging of a record.
 fn log(record: &Record) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single write call and don't create half written logs.
     thread_local! {
-        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(1024));
+        static BUF: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(1024));
     }
 
-    #[cfg(feature = "timestamp")]
-    let timestamp = chrono::Utc::now();
+    BUF.with(|buf| {
+        let mut buf = buf.borrow_mut();
+        buf.clear();
 
-    BUFFER.with(|buffer| {
-        let mut buffer = buffer.borrow_mut();
-        buffer.clear();
-
-        #[cfg(feature = "timestamp")]
-        write!(
-            &mut buffer,
-            "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z ",
-            timestamp.year(),
-            timestamp.month(),
-            timestamp.day(),
-            timestamp.hour(),
-            timestamp.minute(),
-            timestamp.second(),
-            timestamp.nanosecond() / 1000,
-        )
-        .unwrap_or_else(log_failure);
+        format::record(&mut buf, record);
 
         match record.target() {
-            REQUEST_TARGET => {
-                writeln!(
-                    &mut buffer,
-                    "[REQUEST] {}: {}{}",
-                    record.module_path().unwrap_or(""),
-                    record.args(),
-                    KeyValuePrinter(record.key_values())
-                )
-                .unwrap_or_else(log_failure);
-
-                write_once(stdout(), &buffer).unwrap_or_else(log_failure);
-            }
-            target => {
-                writeln!(
-                    &mut buffer,
-                    "[{}] {}: {}{}",
-                    record.level(),
-                    target,
-                    record.args(),
-                    KeyValuePrinter(record.key_values())
-                )
-                .unwrap_or_else(log_failure);
-
-                write_once(stderr(), &buffer).unwrap_or_else(log_failure);
-            }
+            REQUEST_TARGET => write_once(stdout(), &buf),
+            _ => write_once(stderr(), &buf),
         }
+        .unwrap_or_else(log_failure);
     });
 }
 
