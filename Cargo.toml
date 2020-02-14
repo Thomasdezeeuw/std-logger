@@ -12,7 +12,7 @@ repository    = "https://github.com/Thomasdezeeuw/std-logger"
 readme        = "README.md"
 keywords      = ["logging", "log", "standard"]
 categories    = ["development-tools::debugging"]
-include       = ["Cargo.toml", "src/lib.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
+include       = ["Cargo.toml", "src/lib.rs", "src/format.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2018"
 
 [badges]
@@ -32,11 +32,14 @@ log-panics = { version = "2", optional = true, features = ["with-backtrace"] }
 [dev-dependencies]
 criterion   = "0.2"
 lazy_static = "1.0"
+libc        = "0.2"
 
 [[bench]]
 name = "time_format"
+path = "benches/time_format.rs"
 harness = false
 
 [[bench]]
 name = "standard_out"
+path = "benches/standard_out.rs"
 harness = false

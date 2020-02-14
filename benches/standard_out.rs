@@ -1,3 +1,6 @@
+// NOTE: run this benchmark with `cargo bench > /dev/null` and then open
+// `target/criterion/report/index.html`.
+
 use std::io::{self, stdout, Write};
 
 use criterion::{criterion_group, criterion_main, Criterion};
