@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## v0.3.5
 
 * **BREAKING** updated minimum supported Rust version to 1.33.
 * Added `request!` macro, a convenient way to log requests.
+* Added unstable support to print key-value pairs, using `log`'s "kv_unstable"
+  feature.
+* Dropped `libc` as dependency.
 
 ## v0.3.4
 
