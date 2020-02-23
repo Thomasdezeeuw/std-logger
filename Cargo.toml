@@ -4,7 +4,7 @@ description   = """
 A logging implementation for the log crate that logs messages to standard
 error and requests to standard out.
 """
-version       = "0.3.5"
+version       = "0.3.6"
 authors       = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
 license       = "MIT/Apache-2.0"
 documentation = "https://docs.rs/std-logger"

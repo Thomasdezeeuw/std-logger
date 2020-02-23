@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.6
+
+* Fix `request!` macro.
+
 ## v0.3.5
 
 * **BREAKING** updated minimum supported Rust version to 1.33.
