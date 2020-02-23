@@ -240,9 +240,13 @@ pub const REQUEST_TARGET: &str = "request";
 #[macro_export]
 macro_rules! request {
     ($($arg:tt)*) => (
-        log::log!(target: $crate::REQUEST_TARGET, log::Level::Info, $($arg)*);
+        $crate::_log::log!(target: $crate::REQUEST_TARGET, $crate::_log::Level::Info, $($arg)*);
     )
 }
+
+// Not part of the API. Only here for use in the `request!` macro.
+#[doc(hidden)]
+pub use log as _log;
 
 /// Initialise the logger.
 ///

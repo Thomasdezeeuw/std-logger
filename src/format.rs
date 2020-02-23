@@ -1,8 +1,6 @@
 use std::fmt;
 use std::io::Write;
 
-#[cfg(feature = "timestamp")]
-use chrono::{Datelike, Timelike};
 use log::{kv, Record};
 
 use crate::REQUEST_TARGET;
@@ -41,8 +39,9 @@ pub(crate) fn record(buf: &mut Vec<u8>, record: &Record) {
 #[cfg(feature = "timestamp")]
 #[inline(always)]
 fn format_timestamp(buf: &mut Vec<u8>) {
-    let timestamp = chrono::Utc::now();
+    use chrono::{Datelike, Timelike};
 
+    let timestamp = chrono::Utc::now();
     write!(
         buf,
         "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z ",
