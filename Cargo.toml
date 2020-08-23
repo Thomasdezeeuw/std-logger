@@ -25,9 +25,11 @@ log-panic = ["log-panics"]
 timestamp = ["chrono"]
 
 [dependencies]
-chrono     = { version = "0.4", optional = true }
-log        = { version = "0.4.8", features = ["std", "kv_unstable"] }
-log-panics = { version = "2", optional = true, features = ["with-backtrace"] }
+log        = { version = "0.4.11", default-features = false, features = ["std", "kv_unstable"] }
+# Required by timestamp feature.
+chrono     = { version = "0.4.15", optional = true, default-features = false, features = ["clock"] }
+# Required by log-panic feature.
+log-panics = { version = "2.0.0", optional = true, default-features = false, features = ["with-backtrace"] }
 
 [dev-dependencies]
 criterion   = "0.2"
