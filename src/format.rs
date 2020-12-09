@@ -13,27 +13,28 @@ pub(crate) fn record(buf: &mut Vec<u8>, record: &Record) {
 
     match record.target() {
         REQUEST_TARGET => {
-            writeln!(
-                buf,
-                "[REQUEST] {}: {}{}",
-                record.module_path().unwrap_or(""),
-                record.args(),
-                KeyValuePrinter(record.key_values())
-            )
-            .unwrap_or_else(|_| unreachable!());
+            buf.extend_from_slice(b"[REQUEST] ");
+            buf.extend_from_slice(record.module_path().unwrap_or("").as_bytes())
         }
         target => {
-            writeln!(
-                buf,
-                "[{}] {}: {}{}",
-                record.level(),
-                target,
-                record.args(),
-                KeyValuePrinter(record.key_values())
-            )
-            .unwrap_or_else(|_| unreachable!());
+            buf.push(b'[');
+            // TODO: replace with `Level::as_str`.
+            write!(buf, "{}", record.level()).unwrap_or_else(|_| unreachable!());
+            buf.push(b']');
+            buf.push(b' ');
+            buf.extend_from_slice(target.as_bytes());
         }
     }
+
+    buf.push(b':');
+    buf.push(b' ');
+    writeln!(
+        buf,
+        "{}{}",
+        record.args(),
+        KeyValuePrinter(record.key_values())
+    )
+    .unwrap_or_else(|_| unreachable!());
 }
 
 #[cfg(feature = "timestamp")]
