@@ -353,7 +353,7 @@ impl Log for Logger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            log(record);
+            log(record, self.filter >= LevelFilter::Debug);
         }
     }
 
@@ -363,7 +363,7 @@ impl Log for Logger {
 }
 
 /// The actual logging of a record.
-fn log(record: &Record) {
+fn log(record: &Record, debug: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single write call and don't create half written logs.
     thread_local! {
@@ -374,7 +374,7 @@ fn log(record: &Record) {
         let mut buf = buf.borrow_mut();
         buf.clear();
 
-        format::record(&mut buf, record);
+        format::record(&mut buf, record, debug);
 
         match record.target() {
             REQUEST_TARGET => write_once(stdout(), &buf),

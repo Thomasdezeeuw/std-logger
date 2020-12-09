@@ -7,7 +7,7 @@ use crate::REQUEST_TARGET;
 
 /// Formats `record`, writing into `buf`.
 #[inline(always)]
-pub(crate) fn record(buf: &mut Vec<u8>, record: &Record) {
+pub(crate) fn record(buf: &mut Vec<u8>, record: &Record, debug: bool) {
     #[cfg(feature = "timestamp")]
     format_timestamp(buf);
 
@@ -24,6 +24,16 @@ pub(crate) fn record(buf: &mut Vec<u8>, record: &Record) {
             buf.push(b' ');
             buf.extend_from_slice(target.as_bytes());
         }
+    }
+
+    if debug {
+        write!(
+            buf,
+            " ({}:{})",
+            record.file().unwrap_or("??"),
+            record.line().unwrap_or(0),
+        )
+        .unwrap_or_else(|_| unreachable!());
     }
 
     buf.push(b':');

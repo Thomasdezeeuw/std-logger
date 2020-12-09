@@ -89,13 +89,13 @@ sequential_tests! {
         request!("request message2");
 
         let want = vec![
-            "[TRACE] std_logger::tests: trace message",
-            "[DEBUG] std_logger::tests: debug message",
-            "[INFO] std_logger::tests: info message",
-            "[WARN] std_logger::tests: warn message",
-            "[ERROR] std_logger::tests: error message",
-            "[REQUEST] std_logger::tests: request message1",
-            "[REQUEST] std_logger::tests: request message2",
+            "[TRACE] std_logger::tests (src/tests.rs:83): trace message",
+            "[DEBUG] std_logger::tests (src/tests.rs:84): debug message",
+            "[INFO] std_logger::tests (src/tests.rs:85): info message",
+            "[WARN] std_logger::tests (src/tests.rs:86): warn message",
+            "[ERROR] std_logger::tests (src/tests.rs:87): error message",
+            "[REQUEST] std_logger::tests (src/tests.rs:88): request message1",
+            "[REQUEST] std_logger::tests (src/tests.rs:89): request message2",
         ];
         let mut got = unsafe {
             (&*LOG_OUTPUT).iter()
