@@ -304,7 +304,7 @@ fn get_max_level() -> LevelFilter {
 fn get_log_targets() -> Targets {
     match env::var("LOG_TARGET") {
         Ok(ref targets) if !targets.is_empty() => {
-            Targets::Only(targets.split(',').map(|target| target.to_owned()).collect())
+            Targets::Only(targets.split(',').map(|target| target.into()).collect())
         }
         _ => Targets::All,
     }
@@ -323,7 +323,7 @@ enum Targets {
     /// Log all targets.
     All,
     /// Only log certain targets.
-    Only(Box<[String]>),
+    Only(Box<[Box<str>]>),
 }
 
 impl Targets {
@@ -338,7 +338,7 @@ impl Targets {
             // `LOG_TARGET=my_crate::module1,my_crate::module2` etc.
             targets
                 .iter()
-                .any(|log_target| target.starts_with(log_target))
+                .any(|log_target| target.starts_with(&**log_target))
         } else {
             // All targets should be logged.
             true
