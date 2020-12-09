@@ -57,9 +57,9 @@ sequential_tests! {
     fn should_get_correct_log_targets() {
         let tests = vec![
             ("", Targets::All),
-            ("crate1", Targets::Only(vec!["crate1".to_owned()])),
-            ("crate1::mod1", Targets::Only(vec!["crate1::mod1".to_owned()])),
-            ("crate1,crate2", Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()])),
+            ("crate1", Targets::Only(vec!["crate1".to_owned()].into_boxed_slice())),
+            ("crate1::mod1", Targets::Only(vec!["crate1::mod1".to_owned()].into_boxed_slice())),
+            ("crate1,crate2", Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()].into_boxed_slice())),
         ];
 
         for test in tests {
@@ -175,9 +175,9 @@ fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got:
 fn targets_should_log() {
     let targets = vec![
         Targets::All,
-        Targets::Only(vec!["crate1".to_owned()]),
-        Targets::Only(vec!["crate1::mod1".to_owned()]),
-        Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()]),
+        Targets::Only(vec!["crate1".to_owned()].into_boxed_slice()),
+        Targets::Only(vec!["crate1::mod1".to_owned()].into_boxed_slice()),
+        Targets::Only(vec!["crate1".to_owned(), "crate2".to_owned()].into_boxed_slice()),
     ];
 
     let tests = vec![

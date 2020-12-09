@@ -323,7 +323,7 @@ enum Targets {
     /// Log all targets.
     All,
     /// Only log certain targets.
-    Only(Vec<String>),
+    Only(Box<[String]>),
 }
 
 impl Targets {
@@ -358,10 +358,7 @@ impl Log for Logger {
     }
 
     fn flush(&self) {
-        // Can't handle the errors here and we likely can't log them either
-        // because that also goes through std out/err, so we can't do much here.
-        let _ = stdout().flush();
-        let _ = stderr().flush();
+        // Can't flush standard error/out.
     }
 }
 
