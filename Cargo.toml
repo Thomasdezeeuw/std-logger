@@ -25,7 +25,7 @@ log-panic = ["log-panics"]
 timestamp = ["chrono"]
 
 [dependencies]
-log        = { version = "0.4.11", default-features = false, features = ["std", "kv_unstable"] }
+log        = { version = "0.4.13", default-features = false, features = ["kv_unstable_std"] }
 # Required by timestamp feature.
 chrono     = { version = "0.4.15", optional = true, default-features = false, features = ["clock"] }
 # Required by log-panic feature.
