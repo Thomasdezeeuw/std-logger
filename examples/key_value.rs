@@ -35,11 +35,11 @@ fn logger_middleware(request: Request) -> Response {
 
     log::info!("Hello world");
 
-    let kvs: Vec<Box<dyn log::kv::Source>> = vec![
-            Box::new(("url", &url)),
-            Box::new(("method", &method)),
-            Box::new(("status_code", response.status_code)),
-            Box::new(("body_size", response.body.len() as u64)),
+    let kvs: &[(&str, &dyn log::kv::ToValue)] = &[
+        ("url", &&*url), // `String` -> `&&str` -> `&dyn ToValue`.
+        ("method", &&*method),
+        ("status_code", &response.status_code),
+        ("body_size", &response.body.len()),
     ];
 
     let record = log::Record::builder()
