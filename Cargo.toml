@@ -24,6 +24,9 @@ default   = ["timestamp", "log-panic"]
 log-panic = ["log-panics"]
 timestamp = ["chrono"]
 
+# Enable use of features only available in nightly compiler.
+nightly  = []
+
 [dependencies]
 log        = { version = "0.4.13", default-features = false, features = ["kv_unstable_std"] }
 # Required by timestamp feature.
