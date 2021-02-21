@@ -208,6 +208,7 @@
 //! [Timestamp feature]: #timestamp-feature
 
 #![warn(missing_debug_implementations, missing_docs, unused_results)]
+#![cfg_attr(all(feature = "log-panic", feature = "nightly"), feature(backtrace))]
 
 use std::cell::RefCell;
 use std::env;
@@ -276,8 +277,10 @@ pub fn try_init() -> Result<(), SetLoggerError> {
     log::set_boxed_logger(Box::new(logger))?;
     log::set_max_level(filter);
 
-    #[cfg(feature = "log-panic")]
+    #[cfg(all(feature = "log-panic", not(feature = "nightly")))]
     log_panics::init();
+    #[cfg(all(feature = "log-panic", feature = "nightly"))]
+    std::panic::set_hook(Box::new(log_panic));
     Ok(())
 }
 
@@ -308,6 +311,38 @@ fn get_log_targets() -> Targets {
         }
         _ => Targets::All,
     }
+}
+
+/// Panic hook that logs the panic using [`log::error!`].
+#[cfg(all(feature = "log-panic", feature = "nightly"))]
+fn log_panic(info: &std::panic::PanicInfo<'_>) {
+    use std::backtrace::Backtrace;
+    use std::thread;
+
+    let thread = thread::current();
+    let thread_name = thread.name().unwrap_or("unnamed");
+    let msg = match info.payload().downcast_ref::<&'static str>() {
+        Some(s) => *s,
+        None => match info.payload().downcast_ref::<String>() {
+            Some(s) => &**s,
+            None => "<unknown>",
+        },
+    };
+    let (file, line) = match info.location() {
+        Some(location) => (location.file(), location.line()),
+        None => ("<unknown>", 0),
+    };
+    let backtrace = Backtrace::force_capture();
+
+    log::error!(
+        target: "panic",
+        "thread '{}' panicked at '{}', {}:{}\n{}",
+        thread_name,
+        msg,
+        file,
+        line,
+        backtrace,
+    );
 }
 
 /// Our `Log` implementation.
