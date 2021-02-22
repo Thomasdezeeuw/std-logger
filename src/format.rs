@@ -214,8 +214,8 @@ fn zero_pad2(buf: &mut [u8], v: &[u8]) {
 fn zero_pad6(buf: &mut [u8], v: &[u8]) {
     debug_assert_eq!(buf.len(), 6);
     let start = 6 - v.len();
-    for i in 0..=start {
-        buf[i] = b'0';
+    for b in buf.iter_mut().take(start) {
+        *b = b'0';
     }
     buf[start..6].copy_from_slice(v);
 }
