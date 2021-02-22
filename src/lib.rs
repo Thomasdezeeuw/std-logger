@@ -12,7 +12,7 @@
 //! of the messages to actually log and which to ignore.
 //!
 //! `LOG` and `LOG_LEVEL` can be used to set the severity to a specific value,
-//! see the [`log`]'s package `LevelFilter` type for available values.
+//! see the [`log`]'s package [`LevelFilter`] type for available values.
 //!
 //! ```bash
 //! # In your shell of choose:
@@ -97,22 +97,22 @@
 //! used:
 //!
 //! ```text
-//! timestamp [LOG_LEVEL] target: message
+//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="$LOG_LEVEL" msg="$message" target="$target" module="$module"
 //!
 //! For example:
 //!
-//! 2018-03-24T13:48:28.820588Z [ERROR] my_module: my error message
+//! ts="2018-03-24T13:48:28.820588Z" lvl="ERROR" msg="my error message" target="my_module" module="my_module"
 //! ```
 //!
 //! For requests, logged using the [`REQUEST_TARGET`] target or the [`request`]
 //! macro and printed to standard out, the following format is used:
 //!
 //! ```text
-//! timestamp [REQUEST]: message
+//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="INFO" msg="$message" target="request" module="$module"
 //!
 //! For example:
 //!
-//! 2018-03-24T13:30:28.820588Z [REQUEST]: my request message
+//! ts="2018-03-24T13:30:28.820588Z" lvl="INFO" msg="my request message" target="request" module="my_module"
 //! ```
 //!
 //! Note: the timestamp is not printed when the *timestamp* feature is not
@@ -128,9 +128,8 @@
 //! ## Timestamp feature
 //!
 //! The *timestamp* feature adds a timestamp in front of every message. It uses
-//! the format defined in [`RFC3339`] with 6 digit nanosecond precision, e.g.
-//! `2018-03-24T13:48:48.063934Z`. This means that the timestamp is **always**
-//! logged in UTC.
+//! the format defined in [`RFC3339`] with 6 digit microsecond precision, e.g.
+//! `2018-03-24T13:48:48.063934Z`. The timestamp is **always** logged in UTC.
 //!
 //!
 //! ## Log-panic feature
@@ -141,7 +140,7 @@
 //! example (this example doesn't include a timestamp).
 //!
 //! ```log
-//! [ERROR] panic: thread 'main' panicked at 'oops': examples/panic.rs:24
+//! lvl="ERROR" msg="thread 'main' panicked at 'oops', examples/panic.rs:24" target="panic" module="" backtrace="
 //! stack backtrace:
 //!    0:        0x106ba8f74 - backtrace::backtrace::trace<closure>
 //!                         at backtrace-0.3.2/src/backtrace/mod.rs:42
@@ -160,13 +159,14 @@
 //!    7:        0x106bc6c08 - std::rt::lang_start::h6f338c4ae2d58bbe
 //!                         at src/libstd/rt.rs:61
 //!    8:        0x106b93c29 - main
+//! "
 //! ```
 //!
 //! If the *timestamp* feature is enable the first line of the message will be
 //! prefixed with a timestamp as described in the [Timestamp feature].
 //!
 //!
-//! # Example
+//! # Examples
 //!
 //! ```
 //! # use std::time::Duration;
@@ -224,8 +224,7 @@ mod tests;
 
 /// Target for logging requests.
 ///
-/// The [`request`] macro provides a convenient way to log requests, it better
-/// to use that.
+/// The [`request`] macro provides a convenient way to log requests.
 ///
 /// See the [crate level documentation] for more.
 ///
