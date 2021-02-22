@@ -121,8 +121,10 @@
 //!
 //! # Crate features
 //!
-//! This crate has two features, both of which are enabled by default,
-//! *timestamp* and *log-panic*.
+//! This crate has three features:
+//! * *timestamp*, enabled by default.
+//! * *log-panic*, enabled by default.
+//! * *nightly*, disabled by default.
 //!
 //!
 //! ## Timestamp feature
@@ -164,6 +166,15 @@
 //!
 //! If the *timestamp* feature is enable the first line of the message will be
 //! prefixed with a timestamp as described in the [Timestamp feature].
+//!
+//!
+//! ## Nightly feature
+//!
+//! Enabling this feature enables the crate to use unstable (i.e. nightly-only)
+//! features from the compiler and standard library.
+//!
+//! Currently this is limited to using the [`std::backtrace`] for creating
+//! backtraces, rather than an external library.
 //!
 //!
 //! # Examples
