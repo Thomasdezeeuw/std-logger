@@ -335,14 +335,20 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
     };
     let backtrace = Backtrace::force_capture();
 
-    log::error!(
-        target: "panic",
-        "thread '{}' panicked at '{}', {}:{}\n{}",
-        thread_name,
-        msg,
-        file,
-        line,
-        backtrace,
+    log::logger().log(
+        &Record::builder()
+            .args(format_args!(
+                // NOTE: we include file in here because it's only logged when
+                // debug severity is enabled.
+                "thread '{}' panicked at '{}', {}:{}",
+                thread_name, msg, file, line
+            ))
+            .level(log::Level::Error)
+            .target("panic")
+            .file(Some(file))
+            .line(Some(line))
+            .key_values(&("backtrace", &backtrace as &dyn std::fmt::Display))
+            .build(),
     );
 }
 
