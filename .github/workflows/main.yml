@@ -1,0 +1,58 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install nightly compiler
+      run: rustup toolchain install nightly
+    - name: Set default to nightly compiler
+      run: rustup default nightly
+    - name: Rustc version
+      run: rustc -Vv
+    - name: Cargo version
+      run: cargo -Vv
+    - name: Install Cargo Hack
+      run: cargo install cargo-hack
+    - name: Run tests
+      run: cargo hack test --feature-powerset
+  Clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install nightly compiler
+      run: rustup toolchain install nightly
+    - name: Set default to nightly compiler
+      run: rustup default nightly
+    - name: Add Clippy
+      run: rustup component add clippy
+    - name: Rustc version
+      run: rustc -Vv
+    - name: Cargo version
+      run: cargo -Vv
+    - name: Check Clippy
+      run: cargo clippy --all-features -- -D warnings
+  Rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install nightly compiler
+      run: rustup toolchain install nightly
+    - name: Set default to nightly compiler
+      run: rustup default nightly
+    - name: Add rustfmt
+      run: rustup component add rustfmt
+    - name: Rustc version
+      run: rustc -Vv
+    - name: Cargo version
+      run: cargo -Vv
+    - name: Check formatting
+      run: cargo fmt --all -- --check
