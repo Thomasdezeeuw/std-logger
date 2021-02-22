@@ -35,16 +35,7 @@ chrono     = { version = "0.4.15", optional = true, default-features = false, fe
 log-panics = { version = "2.0.0", optional = true, default-features = false, features = ["with-backtrace"] }
 
 [dev-dependencies]
-criterion   = "0.2"
 lazy_static = "1.0"
-libc        = "0.2"
 
-[[bench]]
-name = "time_format"
-path = "benches/time_format.rs"
-harness = false
-
-[[bench]]
-name = "standard_out"
-path = "benches/standard_out.rs"
-harness = false
+[workspace]
+members = ["benches"]
