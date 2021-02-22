@@ -39,8 +39,13 @@ fn logger_middleware(request: Request) -> Response {
 
     // Log the request using the special request target. This will log it to
     // standard out rather then standard error.
-    request!("url = `{}`, method = `{}`, status_code = {}, body_size = {}",
-          url, method, response.status_code, response.body.len());
+    request!(
+        "url = `{}`, method = `{}`, status_code = {}, body_size = {}",
+        url,
+        method,
+        response.status_code,
+        response.body.len()
+    );
 
     if response.status_code == 404 {
         error!("oh no we've routed the user to an unknown page");
