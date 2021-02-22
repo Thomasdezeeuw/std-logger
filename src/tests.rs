@@ -1,5 +1,7 @@
 use std::default::Default;
 use std::sync::Mutex;
+#[cfg(feature = "timestamp")]
+use std::time::{Duration, SystemTime};
 use std::{env, panic, str};
 
 use lazy_static::lazy_static;
@@ -78,7 +80,7 @@ sequential_tests! {
         unsafe { log_setup(); }
 
         #[cfg(feature = "timestamp")]
-        let timestamp = chrono::Utc::now();
+        let timestamp = SystemTime::now();
 
         trace!("trace message");
         debug!("debug message");
@@ -89,13 +91,13 @@ sequential_tests! {
         request!("request message2");
 
         let want = vec![
-            "[TRACE] std_logger::tests (src/tests.rs:83): trace message",
-            "[DEBUG] std_logger::tests (src/tests.rs:84): debug message",
-            "[INFO] std_logger::tests (src/tests.rs:85): info message",
-            "[WARN] std_logger::tests (src/tests.rs:86): warn message",
-            "[ERROR] std_logger::tests (src/tests.rs:87): error message",
-            "[REQUEST] std_logger::tests (src/tests.rs:88): request message1",
-            "[REQUEST] std_logger::tests (src/tests.rs:89): request message2",
+            "[TRACE] std_logger::tests (src/tests.rs:85): trace message",
+            "[DEBUG] std_logger::tests (src/tests.rs:86): debug message",
+            "[INFO] std_logger::tests (src/tests.rs:87): info message",
+            "[WARN] std_logger::tests (src/tests.rs:88): warn message",
+            "[ERROR] std_logger::tests (src/tests.rs:89): error message",
+            "[REQUEST] std_logger::tests (src/tests.rs:90): request message1",
+            "[REQUEST] std_logger::tests (src/tests.rs:91): request message2",
         ];
         let mut got = unsafe {
             (&*LOG_OUTPUT).iter()
@@ -154,19 +156,37 @@ unsafe fn log_setup() {
 }
 
 #[cfg(feature = "timestamp")]
-fn add_timestamp(message: String, timestamp: chrono::DateTime<chrono::Utc>, got: &str) -> String {
-    use chrono::{Datelike, Timelike};
+fn add_timestamp(message: String, now: SystemTime, got: &str) -> String {
+    use std::mem::MaybeUninit;
+
+    let diff = now
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or(Duration::new(0, 0));
+    let mut tm = MaybeUninit::uninit();
+    let secs_since_epoch = diff.as_secs() as i64;
+    let tm = unsafe { libc::gmtime_r(&secs_since_epoch, tm.as_mut_ptr()) };
+    let (year, month, day, hour, min, sec) = match unsafe { tm.as_ref() } {
+        Some(tm) => (
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+        ),
+        None => (0, 0, 0, 0, 0, 0),
+    };
 
     // Add the timestamp to the expected string.
     let timestamp = format!(
         "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}Z",
-        timestamp.year(),
-        timestamp.month(),
-        timestamp.day(),
-        timestamp.hour(),
-        timestamp.minute(),
-        timestamp.second(),
-        &got[20..26]
+        year,
+        month,
+        day,
+        hour,
+        min,
+        sec,
+        &got[20..26] // We can never match the microseconds, so we just copy them.
     );
     format!("{} {}", timestamp, message)
 }
