@@ -22,15 +22,15 @@ appveyor  = { repository = "Thomasdezeeuw/std-logger", service = "github" }
 [features]
 default   = ["timestamp", "log-panic"]
 log-panic = ["log-panics"]
-timestamp = ["chrono"]
+timestamp = ["libc"]
 
 # Enable use of features only available in nightly compiler.
 nightly  = []
 
 [dependencies]
-log        = { version = "0.4.13", default-features = false, features = ["kv_unstable_std"] }
+log        = { version = "0.4.14", default-features = false, features = ["kv_unstable_std"] }
 # Required by timestamp feature.
-chrono     = { version = "0.4.15", optional = true, default-features = false, features = ["clock"] }
+libc       = { version = "0.2.86", optional = true, default-features = false }
 # Required by log-panic feature.
 log-panics = { version = "2.0.0", optional = true, default-features = false, features = ["with-backtrace"] }
 

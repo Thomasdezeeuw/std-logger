@@ -50,19 +50,34 @@ pub(crate) fn record(buf: &mut Vec<u8>, record: &Record, debug: bool) {
 #[cfg(feature = "timestamp")]
 #[inline(always)]
 fn format_timestamp(buf: &mut Vec<u8>) {
-    use chrono::{Datelike, Timelike};
+    use std::mem::MaybeUninit;
+    use std::time::{Duration, SystemTime};
 
-    let timestamp = chrono::Utc::now();
+    let now = SystemTime::now();
+    let diff = now
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_else(|_| Duration::new(0, 0));
+
+    let mut tm = MaybeUninit::uninit();
+    let secs_since_epoch = diff.as_secs() as i64;
+    let tm = unsafe { libc::gmtime_r(&secs_since_epoch, tm.as_mut_ptr()) };
+    let (year, month, day, hour, min, sec) = match unsafe { tm.as_ref() } {
+        Some(tm) => (
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+        ),
+        None => (0, 0, 0, 0, 0, 0),
+    };
+    let micros = diff.subsec_micros();
+
     write!(
         buf,
         "{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{:06}Z ",
-        timestamp.year(),
-        timestamp.month(),
-        timestamp.day(),
-        timestamp.hour(),
-        timestamp.minute(),
-        timestamp.second(),
-        timestamp.nanosecond() / 1000,
+        year, month, day, hour, min, sec, micros,
     )
     .unwrap_or_else(|_| unreachable!());
 }
