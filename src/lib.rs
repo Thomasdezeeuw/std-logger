@@ -428,8 +428,8 @@ fn log(record: &Record, debug: bool) {
         let bufs = format::record(&mut bufs, &mut buf, record, debug);
 
         match record.target() {
-            REQUEST_TARGET => write_once(stdout(), &bufs),
-            _ => write_once(stderr(), &bufs),
+            REQUEST_TARGET => write_once(stdout(), bufs),
+            _ => write_once(stderr(), bufs),
         }
         .unwrap_or_else(log_failure);
     });
@@ -464,7 +464,7 @@ fn log_failure(err: io::Error) {
     // have failed to log... So we remove our panic hook and use the default
     // instead.
     #[cfg(feature = "log-panic")]
-    let _ = std::panic::take_hook();
+    drop(std::panic::take_hook());
 
     panic!("unexpected error logging message: {}", err)
 }
