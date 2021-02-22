@@ -443,15 +443,15 @@ where
 {
     output.write_vectored(bufs).and_then(|written| {
         let total_len = bufs.iter().map(|b| b.len()).sum();
-        if written != total_len {
+        if written == total_len {
+            Ok(())
+        } else {
             // Not completely correct when going by the name alone, but it's the
             // closest we can get to a descriptive error.
             Err(io::Error::new(
                 io::ErrorKind::WriteZero,
                 "failed to write entire log message",
             ))
-        } else {
-            Ok(())
         }
     })
 }
