@@ -28,7 +28,7 @@ fn logger_middleware(request: Request) -> Response {
     // Clone the url and method. Note: don't actually do this in an HTTP this is
     // rather wastefull to.
     let url = request.url.clone();
-    let method = request.url.clone();
+    let method = request.method.clone();
 
     // Call our handler.
     let response = http_handler(request);
