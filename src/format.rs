@@ -108,9 +108,14 @@ impl Buffer {
     #[inline]
     fn write_msg(&mut self, args: &fmt::Arguments) {
         self.buf.truncate(MSG_START_INDEX);
-        // TODO: use `Arguments::as_str` once the `fmt_as_str` feature is
-        // stable.
+        #[cfg(not(feature = "nightly"))]
         write!(self.buf, "{}", args).unwrap_or_else(|_| unreachable!());
+        #[cfg(feature = "nightly")]
+        if let Some(msg) = args.as_str() {
+            self.buf.extend_from_slice(msg.as_bytes());
+        } else {
+            write!(self.buf, "{}", args).unwrap_or_else(|_| unreachable!());
+        }
         self.indices[0] = self.buf.len();
     }
 
