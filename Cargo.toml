@@ -15,10 +15,6 @@ categories    = ["development-tools::debugging"]
 include       = ["Cargo.toml", "src/lib.rs", "src/format.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2018"
 
-[badges]
-travis-ci = { repository = "Thomasdezeeuw/std-logger" }
-appveyor  = { repository = "Thomasdezeeuw/std-logger", service = "github" }
-
 [features]
 default   = ["timestamp", "log-panic"]
 log-panic = ["log-panics"]
