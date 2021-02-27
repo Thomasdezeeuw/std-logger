@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.4.0
+
+* **BREAKING** changes the log output to be based on [logfmt]
+  (https://github.com/Thomasdezeeuw/std-logger/commit/ba1b53c1b940aebe8dc31acac12b6a2e6f412738).
+* Adds logging of file name and line when debug logging is enabled
+  (https://github.com/Thomasdezeeuw/std-logger/commit/f96425adbac0e183eadf05fabd52eb74c1b15ad0).
+* Adds a `nightly` feature that, if enabled, uses nightly-only features from the
+  standard library
+  (https://github.com/Thomasdezeeuw/std-logger/commit/8e4f1512ed785f2c84caaa54de5c8aaf559a09b0).
+* Uses `std::backtrace` if `log-panic` and `nightly` is enabled instead of the
+  log-panics crate
+  (https://github.com/Thomasdezeeuw/std-logger/commit/61b46506d769c57002da95adfadcda3aaec1bf1d).
+  This changes the logged file line and number to be that of the panic
+  (https://github.com/Thomasdezeeuw/std-logger/commit/5b27bea25f0bb654f85092eefad658652d41d90c).
+* Removed chrono depdency
+  (https://github.com/Thomasdezeeuw/std-logger/commit/81a6e325c8d6a0fe10738d032da2899c4fc4db03).
+
+[logfmt]: https://www.brandur.org/logfmt
+
 ## v0.3.6
 
 * Fix `request!` macro.
