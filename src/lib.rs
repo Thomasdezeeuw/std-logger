@@ -93,8 +93,8 @@
 //!
 //! # Format
 //!
-//! For regular messages, printed to standard error, the following format is
-//! used:
+//! The format follows the [logfmt] format. For regular messages, printed to
+//! standard error, the following format is used:
 //!
 //! ```text
 //! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="$LOG_LEVEL" msg="$message" target="$target" module="$module"
@@ -117,6 +117,8 @@
 //!
 //! Note: the timestamp is not printed when the *timestamp* feature is not
 //! enabled, this feature is enabled by default, see [Timestamp feature] below.
+//!
+//! [logfmt]: https://www.brandur.org/logfmt
 //!
 //!
 //! # Crate features
