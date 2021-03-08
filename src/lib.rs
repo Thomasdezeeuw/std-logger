@@ -133,6 +133,14 @@
 //! the format defined in [`RFC3339`] with 6 digit microsecond precision, e.g.
 //! `2018-03-24T13:48:48.063934Z`. The timestamp is **always** logged in UTC.
 //!
+//! ### Notes
+//!
+//! It uses [`SystemTime`] as time source, which **is not monotonic**. This
+//! means that a log message created after an *earlier* log message can have a
+//! timestamp **before** the earlier created log message.
+//!
+//! [`SystemTime`]: std::time::SystemTime
+//!
 //!
 //! ## Log-panic feature
 //!
