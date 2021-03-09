@@ -135,9 +135,9 @@
 //!
 //! ### Notes
 //!
-//! It uses [`SystemTime`] as time source, which **is not monotonic**. This
-//! means that a log message created after an *earlier* log message can have a
-//! timestamp **before** the earlier created log message.
+//! This feature uses [`SystemTime`] as time source, which **is not monotonic**.
+//! This means that a log message created after an *earlier* log message can
+//! have a timestamp **before** the earlier created log message.
 //!
 //! [`SystemTime`]: std::time::SystemTime
 //!
