@@ -123,11 +123,7 @@ impl<R: Read> Parser<R> {
                 // Mark the line (new line included) as parser.
                 self.parsed = (self.buf.len() - input.len()) + if input.is_empty() { 0 } else { 1 };
 
-                if record_is_empty {
-                    return Ok(None);
-                } else {
-                    return Ok(Some(record));
-                }
+                return Ok((!record_is_empty).then(|| record));
             }
 
             let (i, key) = parse_key(input).map_err(|err| self.create_line_error(err))?;
@@ -194,7 +190,6 @@ impl<R: Read> Parser<R> {
         ParseError {
             line: Some(line),
             kind,
-            _private: (),
         }
     }
 }
@@ -211,7 +206,6 @@ impl<R: Read> Iterator for Parser<R> {
                         return Some(Err(ParseError {
                             line: None,
                             kind: ParseErrorKind::Io(err),
-                            _private: (),
                         }));
                     }
                 }
@@ -239,6 +233,7 @@ type ParseResult<'a, T> = Result<(&'a [u8], T), ParseErrorKind>;
 
 /// Error returned by the [`Parser`].
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct ParseError {
     /// The line in which the error occurred. This will be `None` for [I/O]
     /// errors.
@@ -247,8 +242,6 @@ pub struct ParseError {
     pub line: Option<Box<[u8]>>,
     /// Error detail.
     pub kind: ParseErrorKind,
-    /// The creation of the struct is private for future extension.
-    _private: (),
 }
 
 /// Error detail for [`ParseError`].
@@ -470,6 +463,7 @@ fn parse_naked_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
 
 /// A parser log record.
 #[derive(Debug)]
+#[non_exhaustive]
 pub struct Record {
     /// Timestamp *in UTC* (key `ts`).
     pub timestamp: Option<SystemTime>,
@@ -532,7 +526,6 @@ impl Record {
             module: None,
             file: None,
             key_values: HashMap::new(),
-            _private: (),
         }
     }
 }
