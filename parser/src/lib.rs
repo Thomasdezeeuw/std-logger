@@ -220,7 +220,7 @@ impl<R: Read> Iterator for Parser<R> {
                 }
                 Err(err) => {
                     // Skip the troublesome line.
-                    self.parsed += err.line.as_ref().map_or(0, |line| line.len());
+                    self.parsed += err.line.as_ref().map_or(0, |line| line.len() + 1);
                     return Some(Err(err));
                 }
             }
@@ -285,13 +285,13 @@ impl PartialEq for ParseErrorKind {
 // FIXME: handle new lines inside qoutes.
 fn single_line<'a>(input: &'a [u8]) -> &'a [u8] {
     let mut i = 0;
-    for b in input.iter().rev().copied() {
-        if b != b'\n' {
+    for b in input.iter().copied() {
+        if b == b'\n' {
             break;
         }
         i += 1;
     }
-    &input[..input.len() - i]
+    &input[..i]
 }
 
 /// Removes all spaces and tabs at the start of `input`. It does not remove new
@@ -472,7 +472,7 @@ fn parse_qouted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
 fn parse_naked_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     let mut i = 0;
     for b in input.iter().copied() {
-        if b == b' ' {
+        if b == b' ' || b == b'\n' {
             break;
         }
         i += 1;
