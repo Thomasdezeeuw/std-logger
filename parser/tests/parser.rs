@@ -394,3 +394,53 @@ fn invalid_lines() {
     }
     assert!(expected.len() == 0, "left: {:?}", expected.as_slice());
 }
+
+#[test]
+fn io_error_and_continue() {
+    struct ErrReading<'a> {
+        first: &'a [u8],
+        err: Option<io::ErrorKind>,
+        second: &'a [u8],
+    }
+
+    impl<'a> Read for ErrReading<'a> {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            if !self.first.is_empty() {
+                self.first.read(buf)
+            } else if let Some(err) = self.err.take() {
+                Err(err.into())
+            } else {
+                self.second.read(buf)
+            }
+        }
+    }
+
+    let logs = ErrReading {
+        first: b"lvl=INFO msg=Hello target=",
+        err: Some(io::ErrorKind::WouldBlock),
+        second: b"target",
+    };
+
+    let mut parser = parse(logs);
+    match parser.next() {
+        Some(Err(err)) => match err.kind {
+            ParseErrorKind::Io(ref io_err) if io_err.kind() == io::ErrorKind::WouldBlock => {
+                assert!(err.line.is_none());
+            }
+            _ => panic!("unexpected error: {}", err),
+        },
+        _ => panic!("unexpected result"),
+    }
+    let got = parser.next().unwrap().unwrap();
+    let expected = new_record(
+        None,
+        Level::Info,
+        "Hello",
+        "target",
+        None,
+        None,
+        HashMap::new(),
+    );
+    assert_eq!(got, expected);
+    assert!(parser.next().is_none());
+}
