@@ -438,7 +438,7 @@ fn parse_qouted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
         if b == b'"' {
             qoute_count += 1;
             let nb = bytes.peek().copied();
-            if nb == Some(b' ') || nb == Some(b'\n') && qoute_count % 2 == 0 {
+            if nb.is_none() || nb == Some(b' ') || nb == Some(b'\n') && qoute_count % 2 == 0 {
                 break;
             }
         }
