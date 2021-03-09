@@ -162,7 +162,9 @@ impl<R: Read> Parser<R> {
                 }
                 "module" => {
                     let module = parse_string(value).map_err(|err| self.create_line_error(err))?;
-                    record.module = Some(module.to_owned());
+                    if !module.is_empty() {
+                        record.module = Some(module.to_owned());
+                    }
                 }
                 "file" => {
                     let (file, line) =
@@ -358,6 +360,11 @@ fn eat_space_end<'a>(input: &'a [u8]) -> &'a [u8] {
     &input[..input.len() - i]
 }
 
+/// Calls both [`eat_space`] and [`eat_space_end`].
+fn eat_space_both<'a>(input: &'a [u8]) -> &'a [u8] {
+    eat_space(eat_space_end(input))
+}
+
 /// Parses a key, i.e. `key=`.
 fn parse_key<'a>(input: &'a [u8]) -> ParseResult<'a, &'a str> {
     let mut i = 0;
@@ -367,11 +374,19 @@ fn parse_key<'a>(input: &'a [u8]) -> ParseResult<'a, &'a str> {
         }
         i += 1;
     }
-    let (key_bytes, mut input) = input.split_at(i);
+    let (mut key_bytes, mut input) = input.split_at(i);
     if !input.is_empty() {
         input = &input[1..]; // Remove the `=`.
     }
-    let key_bytes = eat_space_end(key_bytes);
+    key_bytes = eat_space_both(key_bytes);
+    // Remove starting and ending quote, if any.
+    match (key_bytes.first(), key_bytes.last()) {
+        (Some(b'"'), Some(b'"')) => {
+            key_bytes = eat_space_both(&key_bytes[1..key_bytes.len() - 1]);
+        }
+        _ => {}
+    }
+
     match str::from_utf8(key_bytes) {
         Ok(key) => Ok((input, key)),
         Err(_) => Err(ParseErrorKind::KeyInvalidUt8),
@@ -472,37 +487,47 @@ fn parse_file<'a>(value: &'a [u8]) -> Result<(&'a str, u32), ParseErrorKind> {
 fn parse_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     let input = eat_space(input);
     if input.first().copied() == Some(b'"') {
-        parse_qouted_value(input)
+        parse_quoted_value(input)
     } else {
         parse_naked_value(input)
     }
 }
 
-/// See [`parse_value`], expects `input` to contain a qouted value, i.e. it
+/// See [`parse_value`], expects `input` to contain a quoted value, i.e. it
 /// starts and ends with `"`.
-fn parse_qouted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
+fn parse_quoted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     debug_assert!(input[0] == b'"');
     let mut i = 1;
-    let mut qoute_count = 1; // Support qoutes inside qoutes.
+    let mut quote_count = 1; // Support quotes inside quotes.
     let mut bytes = input.iter().skip(1).copied().peekable();
-    // FIXME: this doesn't work.
-    // Different strategy: search for next `=`, then backtrace from there.
+    // Set `i` to the index of the `=` of the next key-value pair.
     while let Some(b) = bytes.next() {
-        if b == b'"' {
-            qoute_count += 1;
-            let nb = bytes.peek().copied();
-            if nb.is_none() || nb == Some(b' ') || nb == Some(b'\n') && qoute_count % 2 == 0 {
+        match b {
+            b'"' => quote_count += 1,
+            b'=' if quote_count % 2 == 0 => {
                 break;
             }
+            _ => {}
         }
         i += 1;
     }
 
-    let value = &input[1..i]; // Skip start qoute.
+    // This is include the key of the next key-value pair.
+    // Skip start quote.
+    let input_value = &input[1..i];
+    // Reduce `i` to index of the last quote (`"`) from the value.
+    for b in input_value.iter().rev().copied() {
+        i -= 1;
+        if b == b'"' {
+            break;
+        }
+    }
+
+    let value = &input[1..i]; // Skip start quote.
     let input = if i == input.len() {
         &[]
     } else {
-        &input[i + 1..] // Skip end qoute.
+        &input[i + 1..] // Skip end quote.
     };
     (input, value)
 }
