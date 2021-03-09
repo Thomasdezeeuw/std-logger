@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::fmt;
 use std::io::{self, Read};
 use std::str::{self, FromStr};
 use std::time::{Duration, SystemTime};
@@ -51,7 +52,7 @@ where
 /// for record in parse(logs) {
 ///     let record = record?;
 ///
-///     eprintln!("parsed a record: {:?}", record);
+///     println!("parsed a record: {:?}", record);
 /// }
 /// # Ok(())
 /// # }
@@ -232,7 +233,6 @@ impl<R: Read> Iterator for Parser<R> {
 type ParseResult<'a, T> = Result<(&'a [u8], T), ParseErrorKind>;
 
 /// Error returned by the [`Parser`].
-#[derive(Debug)]
 #[non_exhaustive]
 pub struct ParseError {
     /// The line in which the error occurred. This will be `None` for [I/O]
@@ -242,6 +242,30 @@ pub struct ParseError {
     pub line: Option<Box<[u8]>>,
     /// Error detail.
     pub kind: ParseErrorKind,
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(line) = self.line.as_ref() {
+            write!(
+                f,
+                "error parsing log message: {}, in line `{:?}`",
+                self.kind,
+                str::from_utf8(line)
+                    .as_ref()
+                    .map(|line| line as &dyn fmt::Debug)
+                    .unwrap_or_else(|_| line as &dyn fmt::Debug)
+            )
+        } else {
+            write!(f, "error reading: {}", self.kind)
+        }
+    }
+}
+
+impl fmt::Debug for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
 }
 
 /// Error detail for [`ParseError`].
@@ -281,8 +305,23 @@ impl PartialEq for ParseErrorKind {
     }
 }
 
+impl fmt::Display for ParseErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use ParseErrorKind::*;
+        let msg = match self {
+            KeyInvalidUt8 => "invalid UTF-8 in key",
+            InvalidTimestamp => "invalid timestamp",
+            InvalidLevel => "invalid level",
+            InvalidFile => "invalid file",
+            InvalidValue => "invalid UTF-8 in value",
+            Io(err) => return err.fmt(f),
+        };
+        f.write_str(msg)
+    }
+}
+
 /// Returns a single line.
-// FIXME: handle new lines inside qoutes.
+// FIXME: handle new lines inside quotes.
 fn single_line<'a>(input: &'a [u8]) -> &'a [u8] {
     let mut i = 0;
     for b in input.iter().copied() {
