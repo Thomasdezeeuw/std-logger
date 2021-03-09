@@ -72,6 +72,7 @@ pub struct Parser<R> {
 
 impl<R: Read> Parser<R> {
     fn fill_buf(&mut self) -> io::Result<()> {
+        self.remove_spaces();
         // Remove already processed bytes.
         drop(self.buf.drain(..self.parsed));
         self.parsed = 0;
@@ -100,10 +101,20 @@ impl<R: Read> Parser<R> {
         }
     }
 
+    /// Updates `parsed` to remove all spaces from the start of `buf`.
+    fn remove_spaces(&mut self) {
+        let input = &self.buf[self.parsed..];
+        let input_left = eat_space(input);
+        self.parsed += input.len() - input_left.len();
+    }
+
     /// Returns `None` the log message is incomplete.
     fn parse_line(&mut self) -> Result<Option<Record>, ParseError> {
         let mut record = Record::empty();
         let mut record_is_empty = true;
+        // Remove spaces from the start to ensure `create_line_error` doesn't
+        // include a bunch of empty spaces.
+        self.remove_spaces();
         let mut input = &self.buf[self.parsed..];
 
         loop {
