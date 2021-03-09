@@ -8,7 +8,7 @@ use std_logger_parser::{parse, ParseErrorKind, Record, Value};
 const BUF_SIZE: usize = 4096;
 
 #[track_caller]
-fn test_parser(logs: &[u8], expected: Vec<Record>) {
+fn test_parser<R: Read>(logs: R, expected: Vec<Record>) {
     let mut got = parse(logs);
     let mut expected = expected.into_iter();
     loop {
@@ -66,104 +66,6 @@ fn new_timestamp(ts: &str) -> SystemTime {
     SystemTime::UNIX_EPOCH + Duration::new(time_offset as u64, nanos)
 }
 
-#[test]
-fn smoke() {
-    let logs = b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"\n";
-    let expected = vec![new_record(
-        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
-        Level::Info,
-        "Hello world",
-        "key_value",
-        Some("key_value"),
-        None,
-        HashMap::new(),
-    )];
-    test_parser(logs, expected);
-}
-
-#[test]
-fn no_new_line() {
-    let logs = b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"";
-    let expected = vec![new_record(
-        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
-        Level::Info,
-        "Hello world",
-        "key_value",
-        Some("key_value"),
-        None,
-        HashMap::new(),
-    )];
-    test_parser(logs, expected);
-}
-
-#[test]
-fn ignore_whitespace() {
-    let logs = b"  \n\n  \n";
-    let expected = Vec::new();
-    test_parser(logs, expected);
-}
-
-#[test]
-fn partial_input_key() {
-    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
-    // Make sure the log is partially read, split the `msg` key.
-    logs.resize(BUF_SIZE - 46, b' ');
-    logs.extend_from_slice(b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"");
-    assert_eq!(&logs[BUF_SIZE - 2..BUF_SIZE], b"ms");
-
-    let expected = vec![new_record(
-        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
-        Level::Info,
-        "Hello world",
-        "key_value",
-        Some("key_value"),
-        None,
-        HashMap::new(),
-    )];
-    test_parser(&logs, expected);
-}
-
-#[test]
-fn partial_input_value() {
-    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
-    // Make sure the log is partially read, split the `msg` value.
-    logs.resize(BUF_SIZE - 59, b' ');
-    logs.extend_from_slice(b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"");
-    assert_eq!(&logs[BUF_SIZE - 4..BUF_SIZE], b"worl");
-
-    let expected = vec![new_record(
-        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
-        Level::Info,
-        "Hello world",
-        "key_value",
-        Some("key_value"),
-        None,
-        HashMap::new(),
-    )];
-    test_parser(&logs, expected);
-}
-
-#[test]
-fn buffer_too_small() {
-    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
-    let msg = "a".repeat(BUF_SIZE);
-    logs.extend_from_slice(
-        b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" target=\"test\" msg=\"",
-    );
-    logs.extend_from_slice(msg.as_bytes());
-    logs.extend_from_slice(b"\"");
-    let expected = vec![new_record(
-        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
-        Level::Info,
-        &msg,
-        "test",
-        None,
-        None,
-        HashMap::new(),
-    )];
-    test_parser(&logs, expected);
-}
-
 struct MultiSlice<'a> {
     slices: &'a mut [&'a [u8]],
 }
@@ -190,6 +92,202 @@ impl<'a> Read for MultiSlice<'a> {
         self.slices = &mut slices[remove..];
         return Ok(accumulated_len);
     }
+}
+
+#[test]
+fn smoke() {
+    #[rustfmt::skip]
+    let lines: &mut [&[u8]] = &mut [
+        // Qouted values.
+        b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"target\" module=\"module\"\n",
+        // Naked values.
+        b"ts=2021-02-23T13:15:48.624447Z lvl=INFO msg=Hello target=target module=module\n",
+        // File.
+        b"ts=2021-02-23T13:15:48.624447Z lvl=warn msg=with_file target=key_value module=key_value file=some_file.rs:123\n",
+        // No module.
+        b"ts=2021-02-23T13:15:48.624447Z lvl=Error msg=\"No module\" target=target\n",
+        // Nested qoute.
+        b"ts=2021-02-23T13:15:48.624447Z lvl=TraCE msg=\"Some \"great\" message\" target=  target  \n",
+        // Key-value pairs.
+        b"ts=2021-02-23T13:15:48.624447Z lvl=DEBUG msg=\"key value pairs\" target=key_value module=key_value key1=value1 \"key2\"=\"value2\" key3  = 3  key4=-4 \"key5\"   = 5.0   key6=true key7=false\n",
+        // Panic with backtrace, multi-line qouted values.
+        b"ts=\"2021-02-23T13:16:09.576227Z\" lvl=\"ERROR\" msg=\"thread 'main' panicked at 'oops', examples/panic.rs:15\" target=\"panic\" module=\"\" backtrace=\"   0: std::backtrace_rs::backtrace::libunwind::trace\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/../../backtrace/src/backtrace/libunwind.rs:90:5\n      std::backtrace_rs::backtrace::trace_unsynchronized\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/../../backtrace/src/backtrace/mod.rs:66:5\n      std::backtrace::Backtrace::create\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/backtrace.rs:327:13\n   1: std::backtrace::Backtrace::force_capture\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/backtrace.rs:310:9\n   2: std_logger::log_panic\n             at ./src/lib.rs:346:21\n   3: core::ops::function::Fn::call\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:70:5\n   4: std::panicking::rust_panic_with_hook\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:595:17\n   5: std::panicking::begin_panic::{{closure}}\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/panicking.rs:520:9\n   6: std::sys_common::backtrace::__rust_end_short_backtrace\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys_common/backtrace.rs:141:18\n   7: std::panicking::begin_panic\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/panicking.rs:519:12\n   8: panic::main\n             at ./examples/panic.rs:15:5\n   9: core::ops::function::FnOnce::call_once\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:227:5\n  10: std::sys_common::backtrace::__rust_begin_short_backtrace\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys_common/backtrace.rs:125:18\n  11: std::rt::lang_start::{{closure}}\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:66:18\n  12: core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &F>::call_once\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/core/src/ops/function.rs:259:13\n      std::panicking::try::do_call\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:379:40\n      std::panicking::try\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:343:19\n      std::panic::catch_unwind\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panic.rs:431:14\n      std::rt::lang_start_internal\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/rt.rs:51:25\n  13: std::rt::lang_start\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:65:5\n  14: _main\n\"\n",
+        // No timestamp.
+        b"lvl=\"INFO\" msg=\"Hello world\" \n",
+    ];
+
+    let expected = vec![
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Info,
+            "Hello world",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Warn,
+            "with_file",
+            "key_value",
+            Some("key_value"),
+            Some(("some_file.rs", 123)),
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Error,
+            "No module",
+            "target",
+            None,
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Trace,
+            "Some \"great\" message",
+            "target",
+            None,
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+            Level::Debug,
+            "key value pairs",
+            "key_value",
+            Some("key_value"),
+            None,
+            {
+                let mut m = HashMap::new();
+                m.insert("key1".to_owned(), Value::String("value1".to_owned()));
+                m.insert("key2".to_owned(), Value::String("value2".to_owned()));
+                m.insert("key3".to_owned(), Value::Int(3));
+                m.insert("key4".to_owned(), Value::Int(-4));
+                m.insert("key5".to_owned(), Value::Float(5.0));
+                m.insert("key6".to_owned(), Value::Bool(true));
+                m.insert("key7".to_owned(), Value::Bool(false));
+                m
+            },
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:16:09.576227Z")),
+            Level::Error,
+            "thread 'main' panicked at 'oops', examples/panic.rs:15",
+            "panic",
+            None,
+            None,
+            {
+                let mut m = HashMap::new();
+                m.insert("backtrace".to_owned(), Value::String("   0: std::backtrace_rs::backtrace::libunwind::trace\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/../../backtrace/src/backtrace/libunwind.rs:90:5\n      std::backtrace_rs::backtrace::trace_unsynchronized\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/../../backtrace/src/backtrace/mod.rs:66:5\n      std::backtrace::Backtrace::create\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/backtrace.rs:327:13\n   1: std::backtrace::Backtrace::force_capture\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/backtrace.rs:310:9\n   2: std_logger::log_panic\n             at ./src/lib.rs:346:21\n   3: core::ops::function::Fn::call\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:70:5\n   4: std::panicking::rust_panic_with_hook\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:595:17\n   5: std::panicking::begin_panic::{{closure}}\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/panicking.rs:520:9\n   6: std::sys_common::backtrace::__rust_end_short_backtrace\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys_common/backtrace.rs:141:18\n   7: std::panicking::begin_panic\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/panicking.rs:519:12\n   8: panic::main\n             at ./examples/panic.rs:15:5\n   9: core::ops::function::FnOnce::call_once\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/core/src/ops/function.rs:227:5\n  10: std::sys_common::backtrace::__rust_begin_short_backtrace\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/sys_common/backtrace.rs:125:18\n  11: std::rt::lang_start::{{closure}}\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:66:18\n  12: core::ops::function::impls::<impl core::ops::function::FnOnce<A> for &F>::call_once\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/core/src/ops/function.rs:259:13\n      std::panicking::try::do_call\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:379:40\n      std::panicking::try\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panicking.rs:343:19\n      std::panic::catch_unwind\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/panic.rs:431:14\n      std::rt::lang_start_internal\n             at /rustc/a143517d44cac50b20cbd3a0b579addab40dd399/library/std/src/rt.rs:51:25\n  13: std::rt::lang_start\n             at /Users/thomas/.rustup/toolchains/nightly-x86_64-apple-darwin/lib/rustlib/src/rust/library/std/src/rt.rs:65:5\n  14: _main\n".to_owned()));
+                m
+            },
+        ),
+        new_record(
+            None,
+            Level::Info,
+            "Hello world",
+            "",
+            None,
+            None,
+            HashMap::new(),
+        ),
+    ];
+    test_parser(MultiSlice { slices: lines }, expected);
+}
+
+#[test]
+fn no_new_line() {
+    let logs = b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"";
+    let expected = vec![new_record(
+        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+        Level::Info,
+        "Hello world",
+        "key_value",
+        Some("key_value"),
+        None,
+        HashMap::new(),
+    )];
+    test_parser::<&[u8]>(logs, expected);
+}
+
+#[test]
+fn ignore_whitespace() {
+    let logs = b"  \n\n  \n";
+    let expected = Vec::new();
+    test_parser::<&[u8]>(logs, expected);
+}
+
+#[test]
+fn partial_input_key() {
+    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
+    // Make sure the log is partially read, split the `msg` key.
+    logs.resize(BUF_SIZE - 46, b' ');
+    logs.extend_from_slice(b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"");
+    assert_eq!(&logs[BUF_SIZE - 2..BUF_SIZE], b"ms");
+
+    let expected = vec![new_record(
+        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+        Level::Info,
+        "Hello world",
+        "key_value",
+        Some("key_value"),
+        None,
+        HashMap::new(),
+    )];
+    test_parser(&*logs, expected);
+}
+
+#[test]
+fn partial_input_value() {
+    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
+    // Make sure the log is partially read, split the `msg` value.
+    logs.resize(BUF_SIZE - 59, b' ');
+    logs.extend_from_slice(b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"");
+    assert_eq!(&logs[BUF_SIZE - 4..BUF_SIZE], b"worl");
+
+    let expected = vec![new_record(
+        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+        Level::Info,
+        "Hello world",
+        "key_value",
+        Some("key_value"),
+        None,
+        HashMap::new(),
+    )];
+    test_parser(&*logs, expected);
+}
+
+#[test]
+fn buffer_too_small() {
+    let mut logs = Vec::with_capacity(BUF_SIZE + 200);
+    let msg = "a".repeat(BUF_SIZE);
+    logs.extend_from_slice(
+        b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" target=\"test\" msg=\"",
+    );
+    logs.extend_from_slice(msg.as_bytes());
+    logs.extend_from_slice(b"\"");
+    let expected = vec![new_record(
+        Some(new_timestamp("2021-02-23T13:15:48.624447Z")),
+        Level::Info,
+        &msg,
+        "test",
+        None,
+        None,
+        HashMap::new(),
+    )];
+    test_parser(&*logs, expected);
 }
 
 #[test]
