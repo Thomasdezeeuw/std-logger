@@ -37,4 +37,4 @@ log-panics = { version = "2.0.0", optional = true, default-features = false, fea
 lazy_static = "1.0"
 
 [workspace]
-members = ["benches"]
+members = ["benches", "parser"]
