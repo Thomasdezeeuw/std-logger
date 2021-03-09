@@ -262,6 +262,25 @@ pub enum ParseErrorKind {
     Io(io::Error),
 }
 
+#[doc(hidden)] // This is here for testing purposes.
+impl PartialEq for ParseErrorKind {
+    fn eq(&self, other: &Self) -> bool {
+        use ParseErrorKind::*;
+        match (&self, &other) {
+            (KeyInvalidUt8, KeyInvalidUt8)
+            | (InvalidTimestamp, InvalidTimestamp)
+            | (InvalidLevel, InvalidLevel)
+            | (InvalidFile, InvalidFile)
+            | (InvalidValue, InvalidValue) => true,
+            (Io(s_err), Io(o_err)) => match (s_err.raw_os_error(), o_err.raw_os_error()) {
+                (Some(s), Some(o)) => s == o,
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
+
 /// Returns a single line.
 // FIXME: handle new lines inside qoutes.
 fn single_line<'a>(input: &'a [u8]) -> &'a [u8] {
@@ -309,8 +328,10 @@ fn parse_key<'a>(input: &'a [u8]) -> ParseResult<'a, &'a str> {
         }
         i += 1;
     }
-    let (key_bytes, input) = input.split_at(i);
-    let input = &input[1..]; // Remove the `=`.
+    let (key_bytes, mut input) = input.split_at(i);
+    if !input.is_empty() {
+        input = &input[1..]; // Remove the `=`.
+    }
     let key_bytes = eat_space_end(key_bytes);
     match str::from_utf8(key_bytes) {
         Ok(key) => Ok((input, key)),
@@ -462,7 +483,7 @@ fn parse_naked_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
 }
 
 /// A parser log record.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[non_exhaustive]
 pub struct Record {
     /// Timestamp *in UTC* (key `ts`).
@@ -479,15 +500,13 @@ pub struct Record {
     pub file: Option<(String, u32)>,
     /// Additional key value pairs.
     pub key_values: HashMap<String, Value>,
-    /// The creation of the struct is private for future extension.
-    _private: (),
 }
 
 /// A parsed value from a key-value pair.
 ///
 /// Note that parsing is done based on a best-effort basis, which means
 /// integers, floats etc. might actual be represented as a [`Value::String`].
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Value {
     /// Parsed boolean.
     Bool(bool),
@@ -517,7 +536,9 @@ impl FromStr for Value {
 }
 
 impl Record {
-    fn empty() -> Record {
+    /// Create a new empty record.
+    #[doc(hidden)] // This is only public for testing purposes.
+    pub fn empty() -> Record {
         Record {
             timestamp: None,
             level: Level::Info,
