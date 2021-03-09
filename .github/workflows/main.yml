@@ -23,7 +23,7 @@ jobs:
     - name: Install Cargo Hack
       run: cargo install cargo-hack
     - name: Run tests
-      run: cargo hack test --feature-powerset
+      run: cargo hack test --workspace --feature-powerset
   Clippy:
     runs-on: ubuntu-latest
     steps:
