@@ -255,8 +255,7 @@ impl fmt::Display for ParseError {
                 self.kind,
                 str::from_utf8(line)
                     .as_ref()
-                    .map(|line| line as &dyn fmt::Debug)
-                    .unwrap_or_else(|_| line as &dyn fmt::Debug)
+                    .map_or_else(|line| line as &dyn fmt::Debug, |_| line as &dyn fmt::Debug)
             )
         } else {
             write!(f, "error reading: {}", self.kind)
@@ -380,11 +379,8 @@ fn parse_key<'a>(input: &'a [u8]) -> ParseResult<'a, &'a str> {
     }
     key_bytes = eat_space_both(key_bytes);
     // Remove starting and ending quote, if any.
-    match (key_bytes.first(), key_bytes.last()) {
-        (Some(b'"'), Some(b'"')) => {
-            key_bytes = eat_space_both(&key_bytes[1..key_bytes.len() - 1]);
-        }
-        _ => {}
+    if let (Some(b'"'), Some(b'"')) = (key_bytes.first(), key_bytes.last()) {
+        key_bytes = eat_space_both(&key_bytes[1..key_bytes.len() - 1]);
     }
 
     match str::from_utf8(key_bytes) {
@@ -499,9 +495,9 @@ fn parse_quoted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     debug_assert!(input[0] == b'"');
     let mut i = 1;
     let mut quote_count = 1; // Support quotes inside quotes.
-    let mut bytes = input.iter().skip(1).copied().peekable();
+    let bytes = input.iter().skip(1).copied().peekable();
     // Set `i` to the index of the `=` of the next key-value pair.
-    while let Some(b) = bytes.next() {
+    for b in bytes {
         match b {
             b'"' => quote_count += 1,
             b'=' if quote_count % 2 == 0 => {
