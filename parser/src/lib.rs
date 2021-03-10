@@ -223,7 +223,13 @@ impl<R: Read> Iterator for Parser<R> {
                 }
                 Err(err) => {
                     // Skip the troublesome line.
-                    self.parsed += err.line.as_ref().map_or(0, |line| line.len() + 1);
+                    if let Some(line) = err.line.as_ref() {
+                        self.parsed += line.len();
+                        if let Some(b'\n') = self.buf.get(self.parsed) {
+                            // Also skip the next new line.
+                            self.parsed += 1
+                        }
+                    }
                     return Some(Err(err));
                 }
             }
@@ -322,12 +328,15 @@ impl fmt::Display for ParseErrorKind {
 }
 
 /// Returns a single line.
-// FIXME: handle new lines inside quotes.
 fn single_line<'a>(input: &'a [u8]) -> &'a [u8] {
     let mut i = 0;
+    let mut quote_count = 0;
     for b in input.iter().copied() {
-        if b == b'\n' {
-            break;
+        match b {
+            b'"' => quote_count += 1,
+            // Ignore new lines inside quotes, e.g. in backtraces.
+            b'\n' if quote_count % 2 == 0 => break,
+            _ => {}
         }
         i += 1;
     }
@@ -495,14 +504,12 @@ fn parse_quoted_value<'a>(input: &'a [u8]) -> (&'a [u8], &'a [u8]) {
     debug_assert!(input[0] == b'"');
     let mut i = 1;
     let mut quote_count = 1; // Support quotes inside quotes.
-    let bytes = input.iter().skip(1).copied().peekable();
+    let bytes = input.iter().skip(1).copied();
     // Set `i` to the index of the `=` of the next key-value pair.
     for b in bytes {
         match b {
             b'"' => quote_count += 1,
-            b'=' if quote_count % 2 == 0 => {
-                break;
-            }
+            b'=' if quote_count % 2 == 0 => break,
             _ => {}
         }
         i += 1;
