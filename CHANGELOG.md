@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+* Fixes handling panics during logging
+  (https://github.com/Thomasdezeeuw/std-logger/commit/770219029a9a96b08a1d7c5b1aca8ad948216784).
+* Always log panics, using the "panic" target regardless of set `LOG_TARGET`
+  (https://github.com/Thomasdezeeuw/std-logger/commit/be2c2e3ce6bb4a6bfda7cd7a2e9d30ce41b16563).
+
 ## v0.4.0
 
 * **BREAKING** changes the log output to be based on [logfmt]
