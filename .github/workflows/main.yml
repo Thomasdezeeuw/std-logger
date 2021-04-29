@@ -44,10 +44,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install nightly compiler
-      run: rustup toolchain install nightly
-    - name: Set default to nightly compiler
-      run: rustup default nightly
     - name: Add rustfmt
       run: rustup component add rustfmt
     - name: Rustc version
