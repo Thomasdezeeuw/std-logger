@@ -434,14 +434,32 @@ fn log(record: &Record, debug: bool) {
 
     BUF.with(|buf| {
         let mut bufs = [IoSlice::new(&[]); BUFS_SIZE];
-        let mut buf = buf.borrow_mut();
-        let bufs = format::record(&mut bufs, &mut buf, record, debug);
-
-        match record.target() {
-            REQUEST_TARGET => write_once(stdout(), bufs),
-            _ => write_once(stderr(), bufs),
+        match buf.try_borrow_mut() {
+            Ok(mut buf) => {
+                // NOTE: keep in sync with the `Err` branch below.
+                let bufs = format::record(&mut bufs, &mut buf, record, debug);
+                match record.target() {
+                    REQUEST_TARGET => write_once(stdout(), bufs),
+                    _ => write_once(stderr(), bufs),
+                }
+                .unwrap_or_else(log_failure);
+            }
+            Err(_) => {
+                // NOTE: We only get to this branch if we're panicking while
+                // calling `format::record`, e.g. when a `fmt::Display` impl in
+                // the `record` panics, and the `log-panic` feature is enabled
+                // which calls `error!` and in turn this function again, while
+                // still borrowing `BUF`.
+                let mut buf = Buffer::new();
+                // NOTE: keep in sync with the `Ok` branch above.
+                let bufs = format::record(&mut bufs, &mut buf, record, debug);
+                match record.target() {
+                    REQUEST_TARGET => write_once(stdout(), bufs),
+                    _ => write_once(stderr(), bufs),
+                }
+                .unwrap_or_else(log_failure);
+            }
         }
-        .unwrap_or_else(log_failure);
     });
 }
 

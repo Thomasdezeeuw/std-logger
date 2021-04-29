@@ -110,9 +110,9 @@ sequential_tests! {
         info!(target: REQUEST_TARGET, "request message1");
         request!("request message2");
 
-        let got = replace(&mut *(LOG_OUTPUT.lock().unwrap()), Vec::new());
         // Make sure the panics aren't logged.
         let _ = std::panic::take_hook();
+        let got = replace(&mut *(LOG_OUTPUT.lock().unwrap()), Vec::new());
 
         let mut got_length = 0;
         for (want, got) in want.into_iter().zip(got.into_iter()) {
