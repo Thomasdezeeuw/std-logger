@@ -182,6 +182,10 @@ fn targets_should_log() {
         ("crate1::mod1", vec![true, true, true, true]),
         ("crate2", vec![true, false, false, true]),
         ("crate2::mod2", vec![true, false, false, true]),
+        // Requests should always be logged.
+        (REQUEST_TARGET, vec![true, true, true, true]),
+        // Panics should always be logged.
+        ("panic", vec![true, true, true, true]),
     ];
 
     for (test_target, wanted) in tests {

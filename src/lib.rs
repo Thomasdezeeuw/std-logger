@@ -86,7 +86,7 @@
 //! $ LOG_LEVEL=trace LOG_TARGET=my_crate::my_module ./my_binary
 //! ```
 //!
-//! Note that [requests] are always logged.
+//! Note that [requests] and panics (with target="panic") are always logged.
 //!
 //! [requests]: index.html#logging-requests
 //!
@@ -391,7 +391,7 @@ enum Targets {
 impl Targets {
     /// Returns `true` if the `target` should be logged.
     fn should_log(&self, target: &str) -> bool {
-        if target == REQUEST_TARGET {
+        if target == REQUEST_TARGET || target == "panic" {
             // Always log requests.
             true
         } else if let Targets::Only(targets) = self {
