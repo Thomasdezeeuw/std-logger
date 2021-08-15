@@ -261,7 +261,7 @@ impl fmt::Display for ParseError {
                 self.kind,
                 str::from_utf8(line)
                     .as_ref()
-                    .map_or_else(|line| line as &dyn fmt::Debug, |_| line as &dyn fmt::Debug)
+                    .map_or_else(|_| line as &dyn fmt::Debug, |line| line as &dyn fmt::Debug)
             )
         } else {
             write!(f, "error reading: {}", self.kind)
