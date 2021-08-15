@@ -47,6 +47,11 @@ fn new_record(
 
 #[track_caller]
 fn new_timestamp(ts: &str) -> SystemTime {
+    new_timestamptz(ts, 0)
+}
+
+#[track_caller]
+fn new_timestamptz(ts: &str, gmtoff: libc::c_long) -> SystemTime {
     let mut tm = libc::tm {
         tm_sec: ts[17..19].parse().unwrap(),
         tm_min: ts[14..16].parse().unwrap(),
@@ -57,7 +62,7 @@ fn new_timestamp(ts: &str) -> SystemTime {
         tm_wday: 0,
         tm_yday: 0,
         tm_isdst: 0,
-        tm_gmtoff: 0,
+        tm_gmtoff: gmtoff,
         tm_zone: std::ptr::null_mut(),
     };
     let time_offset = unsafe { libc::timegm(&mut tm) };
@@ -208,6 +213,120 @@ fn smoke() {
 }
 
 #[test]
+fn timestamps() {
+    let lines: &mut [&[u8]] = &mut [
+        // UTC with nanoseconds.
+        b"ts=2021-02-23T13:15:41.624447Z lvl=INFO msg=Hello target=target module=module\n",
+        // UTC without nanoseconds.
+        b"ts=2021-02-23T13:15:42Z lvl=INFO msg=Hello target=target module=module\n",
+        // Timezone with nanoseconds.
+        b"ts=2021-02-23T13:15:43.624447+00:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:44.624447+02:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:45.624447-00:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:46.624447-02:00 lvl=INFO msg=Hello target=target module=module\n",
+        // Timezone without nanoseconds.
+        b"ts=2021-02-23T13:15:47+00:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:48+02:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:49-00:00 lvl=INFO msg=Hello target=target module=module\n",
+        b"ts=2021-02-23T13:15:50-02:00 lvl=INFO msg=Hello target=target module=module\n",
+    ];
+
+    let expected = vec![
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:41.624447Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:42.000000Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:43.624447Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamptz("2021-02-23T13:15:44.624447Z", 7200)),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:45.624447Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamptz("2021-02-23T13:15:46.624447Z", -7200)),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:47.000000Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamptz("2021-02-23T13:15:48.000000Z", 7200)),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamp("2021-02-23T13:15:49.000000Z")),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+        new_record(
+            Some(new_timestamptz("2021-02-23T13:15:50.000000Z", -7200)),
+            Level::Info,
+            "Hello",
+            "target",
+            Some("module"),
+            None,
+            HashMap::new(),
+        ),
+    ];
+    test_parser(MultiSlice { slices: lines }, expected);
+}
+
+#[test]
 fn no_new_line() {
     let logs = b"ts=\"2021-02-23T13:15:48.624447Z\" lvl=\"INFO\" msg=\"Hello world\" target=\"key_value\" module=\"key_value\"";
     let expected = vec![new_record(
@@ -299,7 +418,7 @@ fn invalid_lines() {
 
         // Invalid timestamp.
         b"ts=2021-02-23T13:15:48.62444Z\n", // Invalid length (too short).
-        b"ts=2021-02-23T13:15:48.624447ZA\n", // Invalid length (too long).
+        b"ts=2021-02-23T13:15:48.624447+02:00A\n", // Invalid length (too long).
         // Incorrect formatting of delimiters.
         b"ts=2021A02-23T13:15:48.624447Z\n", // Year-month.
         b"ts=2021-02A23T13:15:48.624447Z\n", // Month-day.

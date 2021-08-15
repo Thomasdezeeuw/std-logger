@@ -398,40 +398,94 @@ fn parse_key<'a>(input: &'a [u8]) -> ParseResult<'a, &'a str> {
     }
 }
 
-/// Parse a timestamp with the format: `yyyy-mm-ddThh:mm:ss.nnnnnnZ`, e.g.
+/// Parse a timestamp with the format: `yyyy-mm-ddThh:mm:ss.nnnnnnZhh:mm`, e.g.
 /// `2021-02-23T13:15:48.624447Z`.
 fn parse_timestamp<'a>(value: &'a [u8]) -> Result<SystemTime, ParseErrorKind> {
-    // Invalid length or format.
-    if value.len() != 27
-        || value[4] != b'-'
-        || value[7] != b'-'
-        || value[10] != b'T'
-        || value[13] != b':'
-        || value[16] != b':'
-        || value[19] != b'.'
-        || value[26] != b'Z'
-    {
+    if value.len() < 20 {
+        // Shorted valid timestamp is 20: `yyyy-mm-ddThh:mm:ssZ`.
         return Err(ParseErrorKind::InvalidTimestamp);
     }
+
     let value = match str::from_utf8(value) {
         Ok(value) => value,
         Err(_) => return Err(ParseErrorKind::InvalidTimestamp),
     };
 
+    macro_rules! check_value {
+        ($expr: expr) => {
+            if $expr {
+                return Err(ParseErrorKind::InvalidTimestamp);
+            }
+        };
+    }
+
     #[rustfmt::skip] // Rustfmt makes it 3 lines, it's fits on a single one just fine.
     let year: i32 = value[0..4].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    check_value!(value.as_bytes()[4] != b'-');
     #[rustfmt::skip]
     let month: i32 = value[5..7].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    check_value!(value.as_bytes()[7] != b'-');
     #[rustfmt::skip]
     let day: i32 = value[8..10].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    check_value!(value.as_bytes()[10] != b'T');
     #[rustfmt::skip]
     let hour: i32 = value[11..13].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    check_value!(value.as_bytes()[13] != b':');
     #[rustfmt::skip]
     let min: i32 = value[14..16].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    check_value!(value.as_bytes()[16] != b':');
     #[rustfmt::skip]
     let sec: i32 = value[17..19].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
-    #[rustfmt::skip]
-    let nanos: u32 = value[20..26].parse().map_err(|_| ParseErrorKind::InvalidTimestamp)?;
+    let (nanos, idx) = if value.as_bytes()[19] == b'.' {
+        let nanos = match value.get(20..26) {
+            Some(nanos) => nanos
+                .parse()
+                .map_err(|_| ParseErrorKind::InvalidTimestamp)?,
+            None => return Err(ParseErrorKind::InvalidTimestamp),
+        };
+        (nanos, 26)
+    } else {
+        (0, 19)
+    };
+    let gmtoff = match value.as_bytes()[idx] {
+        // UTC timezone.
+        b'Z' => 0,
+        // Timezone offset `+HH:MM` or `-HH:MM`.
+        b @ b'+' | b @ b'-' if value.len() == idx + 6 => {
+            let mut offset: libc::c_long = 0;
+            // DRY this.
+            match value.as_bytes()[idx + 1] {
+                b @ b'0'..=b'9' => offset = offset * 10 + (b - b'0') as libc::c_long,
+                _ => return Err(ParseErrorKind::InvalidTimestamp),
+            }
+            match value.as_bytes()[idx + 2] {
+                b @ b'0'..=b'9' => offset = offset * 10 + (b - b'0') as libc::c_long,
+                _ => return Err(ParseErrorKind::InvalidTimestamp),
+            }
+            check_value!(value.as_bytes()[idx + 3] != b':');
+            match value.as_bytes()[idx + 4] {
+                b @ b'0'..=b'9' => offset = offset * 10 + (b - b'0') as libc::c_long,
+                _ => return Err(ParseErrorKind::InvalidTimestamp),
+            }
+            match value.as_bytes()[idx + 5] {
+                b @ b'0'..=b'9' => offset = offset * 10 + (b - b'0') as libc::c_long,
+                _ => return Err(ParseErrorKind::InvalidTimestamp),
+            }
+
+            if offset % 100 >= 60 {
+                // Can't have more then 60 minutes in an hour.
+                return Err(ParseErrorKind::InvalidTimestamp);
+            }
+
+            offset = ((offset / 100) * 3600) + ((offset % 100) * 60);
+            if b == b'-' {
+                offset = -offset;
+            }
+
+            offset
+        }
+        _ => return Err(ParseErrorKind::InvalidTimestamp),
+    };
 
     // Convert the timestamp into the number of seconds sinch Unix Epoch.
     let mut tm = libc::tm {
@@ -444,7 +498,7 @@ fn parse_timestamp<'a>(value: &'a [u8]) -> Result<SystemTime, ParseErrorKind> {
         tm_wday: 0,
         tm_yday: 0,
         tm_isdst: 0,
-        tm_gmtoff: 0,
+        tm_gmtoff: gmtoff,
         tm_zone: std::ptr::null_mut(),
     };
     let time_offset = unsafe { libc::timegm(&mut tm) };
