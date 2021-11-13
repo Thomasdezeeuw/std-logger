@@ -263,8 +263,8 @@ fn format() {
 
 fn format_record(record: &Record, debug: bool) -> String {
     let mut bufs = [IoSlice::new(&[]); crate::BUFS_SIZE];
-    let mut buf = format::Buffer::new();
-    let bufs = format::record(&mut bufs, &mut buf, record, debug);
+    let mut buf = format::Buffer::new(format::logfmt::REUSABLE_PARTS);
+    let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
     let mut output = Vec::new();
     let _ = output.write_vectored(bufs).unwrap();
     String::from_utf8(output).unwrap()

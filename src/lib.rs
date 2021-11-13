@@ -432,7 +432,7 @@ fn log(record: &Record, debug: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
     thread_local! {
-        static BUF: RefCell<Buffer> = RefCell::new(Buffer::new());
+        static BUF: RefCell<Buffer> = RefCell::new(Buffer::new(format::logfmt::REUSABLE_PARTS));
     }
 
     BUF.with(|buf| {
@@ -440,7 +440,7 @@ fn log(record: &Record, debug: bool) {
         match buf.try_borrow_mut() {
             Ok(mut buf) => {
                 // NOTE: keep in sync with the `Err` branch below.
-                let bufs = format::record(&mut bufs, &mut buf, record, debug);
+                let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
@@ -449,13 +449,13 @@ fn log(record: &Record, debug: bool) {
             }
             Err(_) => {
                 // NOTE: We only get to this branch if we're panicking while
-                // calling `format::record`, e.g. when a `fmt::Display` impl in
+                // calling `format::logfmt`, e.g. when a `fmt::Display` impl in
                 // the `record` panics, and the `log-panic` feature is enabled
                 // which calls `error!` and in turn this function again, while
                 // still borrowing `BUF`.
-                let mut buf = Buffer::new();
+                let mut buf = Buffer::new(format::logfmt::REUSABLE_PARTS);
                 // NOTE: keep in sync with the `Ok` branch above.
-                let bufs = format::record(&mut bufs, &mut buf, record, debug);
+                let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
