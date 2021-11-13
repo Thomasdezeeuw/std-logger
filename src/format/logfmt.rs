@@ -1,3 +1,5 @@
+//! Logfmt following <https://www.brandur.org/logfmt>.
+
 use std::fmt;
 use std::io::IoSlice;
 use std::io::Write;
@@ -64,10 +66,10 @@ pub(crate) fn format<'b>(
         bufs[8] = IoSlice::new(b" file=\"");
         bufs[9] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
         bufs[10] = IoSlice::new(line(buf));
-        BUFS_SIZE
+        11
     } else {
         bufs[8] = IoSlice::new(b"\n");
-        BUFS_SIZE - 2
+        9
     };
 
     &bufs[..n]
@@ -76,7 +78,7 @@ pub(crate) fn format<'b>(
 #[inline]
 #[cfg(feature = "timestamp")]
 fn write_timestamp(buf: &mut Buffer) {
-    format_timestamp(&mut buf.buf[4..TS_END_INDEX]);
+    format_timestamp(&mut buf.buf[4..]);
 }
 
 #[inline]
