@@ -6,7 +6,9 @@ use std::io::Write;
 
 use log::{kv, Record};
 
-use crate::format::{format_timestamp, Buffer, BUFS_SIZE};
+#[cfg(feature = "timestamp")]
+use crate::format::format_timestamp;
+use crate::format::{Buffer, BUFS_SIZE};
 
 /// Parts of the message we can reuse.
 #[cfg(feature = "timestamp")]
