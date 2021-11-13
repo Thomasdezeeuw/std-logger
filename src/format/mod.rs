@@ -1,7 +1,12 @@
+pub(crate) mod gcloud;
 pub(crate) mod logfmt;
 
+// Allow easy access as `format::$format`.
+pub(crate) use gcloud::format as gcloud;
+pub(crate) use logfmt::format as logfmt;
+
 /// Number of buffers the format functions require.
-pub(crate) const BUFS_SIZE: usize = 11;
+pub(crate) const BUFS_SIZE: usize = 14;
 
 /// Number of indices used in `Buffer`:
 /// 0) Message.
@@ -27,9 +32,6 @@ impl Buffer {
         Buffer { buf, indices }
     }
 }
-
-// Allow access as `format::logfmt`.
-pub(crate) use logfmt::format as logfmt;
 
 /// Format the timestamp in the following format:
 /// `YYYY-MM-DDThh:mm:ss.SSSSSSZ`. For example:
