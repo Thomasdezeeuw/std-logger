@@ -269,3 +269,47 @@ fn format_record(record: &Record, debug: bool) -> String {
     let _ = output.write_vectored(bufs).unwrap();
     String::from_utf8(output).unwrap()
 }
+
+#[test]
+#[cfg(feature = "timestamp")]
+fn timestamp() {
+    use std::mem::MaybeUninit;
+
+    let tests = [
+        SystemTime::now(),
+        SystemTime::UNIX_EPOCH + Duration::from_secs(41 * (365 * 24 * 60 * 60)),
+        SystemTime::UNIX_EPOCH + Duration::from_secs(51 * (365 * 24 * 60 * 60)),
+        SystemTime::UNIX_EPOCH + Duration::from_secs(101 * (365 * 24 * 60 * 60)),
+    ];
+
+    for time in tests {
+        // Get the libc values we expected.
+        let diff = time
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_else(|_| Duration::new(0, 0));
+        let mut tm = MaybeUninit::uninit();
+        let secs_since_epoch = diff.as_secs() as i64;
+        let tm = unsafe { libc::gmtime_r(&secs_since_epoch, tm.as_mut_ptr()) };
+        let (year, month, day, hour, min, sec) = match unsafe { tm.as_ref() } {
+            Some(tm) => (
+                tm.tm_year + 1900,
+                tm.tm_mon + 1,
+                tm.tm_mday,
+                tm.tm_hour,
+                tm.tm_min,
+                tm.tm_sec,
+            ),
+            None => (0, 0, 0, 0, 0, 0),
+        };
+        let micros = diff.subsec_micros();
+
+        let got = crate::timestamp::Timestamp::from(time);
+        assert_eq!(got.year as i32, year);
+        assert_eq!(got.month as i32, month);
+        assert_eq!(got.day as i32, day);
+        assert_eq!(got.hour as i32, hour);
+        assert_eq!(got.min as i32, min);
+        assert_eq!(got.sec as i32, sec);
+        assert_eq!(got.micro as u32, micros);
+    }
+}
