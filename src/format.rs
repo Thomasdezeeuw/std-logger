@@ -167,38 +167,15 @@ impl Buffer {
 #[inline]
 #[cfg(feature = "timestamp")]
 fn format_timestamp(buf: &mut [u8]) {
-    use std::mem::MaybeUninit;
-    use std::time::{Duration, SystemTime};
-
-    let now = SystemTime::now();
-    let diff = now
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_else(|_| Duration::new(0, 0));
-
-    let mut tm = MaybeUninit::uninit();
-    let secs_since_epoch = diff.as_secs() as i64;
-    let tm = unsafe { libc::gmtime_r(&secs_since_epoch, tm.as_mut_ptr()) };
-    let (year, month, day, hour, min, sec) = match unsafe { tm.as_ref() } {
-        Some(tm) => (
-            tm.tm_year + 1900,
-            tm.tm_mon + 1,
-            tm.tm_mday,
-            tm.tm_hour,
-            tm.tm_min,
-            tm.tm_sec,
-        ),
-        None => (0, 0, 0, 0, 0, 0),
-    };
-    let micros = diff.subsec_micros();
-
+    let timestamp = crate::timestamp::Timestamp::now();
     let mut itoa = itoa::Buffer::new();
-    buf[4..8].copy_from_slice(itoa.format(year).as_bytes());
-    zero_pad2(&mut buf[9..11], itoa.format(month).as_bytes());
-    zero_pad2(&mut buf[12..14], itoa.format(day).as_bytes());
-    zero_pad2(&mut buf[15..17], itoa.format(hour).as_bytes());
-    zero_pad2(&mut buf[18..20], itoa.format(min).as_bytes());
-    zero_pad2(&mut buf[21..23], itoa.format(sec).as_bytes());
-    zero_pad6(&mut buf[24..30], itoa.format(micros).as_bytes());
+    buf[4..8].copy_from_slice(itoa.format(timestamp.year).as_bytes());
+    zero_pad2(&mut buf[9..11], itoa.format(timestamp.month).as_bytes());
+    zero_pad2(&mut buf[12..14], itoa.format(timestamp.day).as_bytes());
+    zero_pad2(&mut buf[15..17], itoa.format(timestamp.hour).as_bytes());
+    zero_pad2(&mut buf[18..20], itoa.format(timestamp.min).as_bytes());
+    zero_pad2(&mut buf[21..23], itoa.format(timestamp.sec).as_bytes());
+    zero_pad6(&mut buf[24..30], itoa.format(timestamp.micro).as_bytes());
 }
 
 #[inline]

@@ -240,6 +240,9 @@ use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 mod format;
 use format::{Buffer, BUFS_SIZE};
 
+#[cfg(feature = "timestamp")]
+mod timestamp;
+
 #[cfg(test)]
 mod tests;
 
