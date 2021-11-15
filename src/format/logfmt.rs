@@ -8,79 +8,78 @@ use log::{kv, Record};
 
 #[cfg(feature = "timestamp")]
 use crate::format::format_timestamp;
-use crate::format::{Buffer, BUFS_SIZE};
+use crate::format::{Buffer, Format, BUFS_SIZE};
 
-/// Parts of the message we can reuse.
-#[cfg(feature = "timestamp")]
-pub(crate) const REUSABLE_PARTS: &[u8] = b"ts=\"0000-00-00T00:00:00.000000Z\" lvl=\"\" msg=\"";
-#[cfg(not(feature = "timestamp"))]
-pub(crate) const REUSABLE_PARTS: &[u8] = b"lvl=\"\" msg=\"";
+/// Logfmt following <https://www.brandur.org/logfmt>.
+#[allow(missing_debug_implementations)]
+pub enum LogFmt {}
 
-/// Index of the end of `ts="..." lvl="`.
-#[cfg(feature = "timestamp")]
-const TS_END_INDEX: usize = 38;
-#[cfg(not(feature = "timestamp"))]
-const TS_END_INDEX: usize = 5;
-/// Index where the message should be written to.
-const MSG_START_INDEX: usize = TS_END_INDEX + 7;
+impl Format for LogFmt {
+    fn format<'b>(
+        bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
+        buf: &'b mut Buffer,
+        record: &'b Record,
+        debug: bool,
+    ) -> &'b [IoSlice<'b>] {
+        // Write all parts of the buffer that need formatting.
+        #[cfg(feature = "timestamp")]
+        write_timestamp(buf);
+        write_msg(buf, record.args());
+        write_key_values(buf, record.key_values());
+        if debug {
+            write_line(buf, record.line().unwrap_or(0));
+        }
 
-/// Formats a log `record`.
-///
-/// This writes into the buffer `buf` for things that need formatting, which it
-/// resets itself. The returned slices is based on `bufs`, which is used to
-/// order the writable buffers.
-///
-/// If `debug` is `true` the file and line are added.
-#[inline]
-pub(crate) fn format<'b>(
-    bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
-    buf: &'b mut Buffer,
-    record: &'b Record,
-    debug: bool,
-) -> &'b [IoSlice<'b>] {
-    // Write all parts of the buffer that need formatting.
-    #[cfg(feature = "timestamp")]
-    write_timestamp(buf);
-    write_msg(buf, record.args());
-    write_key_values(buf, record.key_values());
-    if debug {
-        write_line(buf, record.line().unwrap_or(0));
+        // Now that we've written the message to our buffer we have to construct it.
+        // The first part of the message is the timestamp and log level, e.g.
+        // `ts="2020-12-31T12:32:23.906132Z" lvl="INFO`.
+        // Or without a timestamp, i.e. `lvl="INFO`.
+        bufs[0] = IoSlice::new(timestamp(buf));
+        bufs[1] = IoSlice::new(b"lvl=\"");
+        bufs[2] = IoSlice::new(record.level().as_str().as_bytes());
+        bufs[3] = IoSlice::new(b"\" msg=\"");
+        // The message (and the end of the log level), e.g. `" msg="some message`.
+        bufs[4] = IoSlice::new(msg(buf));
+        // The target, e.g. `" target="request`.
+        bufs[5] = IoSlice::new(b"\" target=\"");
+        bufs[6] = IoSlice::new(record.target().as_bytes());
+        // The module, e.g. `" module="stored::http`.
+        bufs[7] = IoSlice::new(b"\" module=\"");
+        bufs[8] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
+        // Any key value pairs supplied by the user.
+        bufs[9] = IoSlice::new(key_values(buf));
+        // Optional file, e.g. ` file="some_file:123"`, and a line end.
+        let n = if debug {
+            bufs[10] = IoSlice::new(b" file=\"");
+            bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
+            bufs[12] = IoSlice::new(line(buf));
+            13
+        } else {
+            bufs[10] = IoSlice::new(b"\n");
+            11
+        };
+
+        &bufs[..n]
     }
-
-    // Now that we've written the message to our buffer we have to construct it.
-    // The first part of the message is the timestamp and log level, e.g.
-    // `ts="2020-12-31T12:32:23.906132Z" lvl="INFO`.
-    // Or without a timestamp, i.e. `lvl="INFO`.
-    bufs[0] = IoSlice::new(timestamp(buf));
-    bufs[1] = IoSlice::new(record.level().as_str().as_bytes());
-    // The message (and the end of the log level), e.g. `" msg="some message`.
-    bufs[2] = IoSlice::new(msg(buf));
-    // The target, e.g. `" target="request`.
-    bufs[3] = IoSlice::new(b"\" target=\"");
-    bufs[4] = IoSlice::new(record.target().as_bytes());
-    // The module, e.g. `" module="stored::http`.
-    bufs[5] = IoSlice::new(b"\" module=\"");
-    bufs[6] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
-    // Any key value pairs supplied by the user.
-    bufs[7] = IoSlice::new(key_values(buf));
-    // Optional file, e.g. ` file="some_file:123"`, and a line end.
-    let n = if debug {
-        bufs[8] = IoSlice::new(b" file=\"");
-        bufs[9] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
-        bufs[10] = IoSlice::new(line(buf));
-        11
-    } else {
-        bufs[8] = IoSlice::new(b"\n");
-        9
-    };
-
-    &bufs[..n]
 }
+
+/// Index of the end of `ts="..."`.
+#[cfg(feature = "timestamp")]
+const TS_END_INDEX: usize = 33;
+#[cfg(not(feature = "timestamp"))]
+const TS_END_INDEX: usize = 0;
 
 #[inline]
 #[cfg(feature = "timestamp")]
 fn write_timestamp(buf: &mut Buffer) {
+    let _ = buf.buf[TS_END_INDEX];
+    buf.buf[0] = b't';
+    buf.buf[1] = b's';
+    buf.buf[2] = b'=';
+    buf.buf[3] = b'"';
     format_timestamp(&mut buf.buf[4..]);
+    buf.buf[TS_END_INDEX - 2] = b'"';
+    buf.buf[TS_END_INDEX - 1] = b' ';
 }
 
 #[inline]
@@ -90,7 +89,7 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 
 #[inline]
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
-    buf.buf.truncate(MSG_START_INDEX);
+    buf.buf.truncate(TS_END_INDEX);
     #[cfg(not(feature = "nightly"))]
     write!(buf.buf, "{}", args).unwrap_or_else(|_| unreachable!());
     #[cfg(feature = "nightly")]
@@ -104,8 +103,6 @@ fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
 
 #[inline]
 fn msg(buf: &Buffer) -> &[u8] {
-    // NOTE: not using `MSG_START_INDEX` here because we need to include the
-    // `" msg="` format part.
     &buf.buf[TS_END_INDEX..buf.indices[0]]
 }
 

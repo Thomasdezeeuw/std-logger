@@ -9,9 +9,9 @@ use std::{env, fmt, panic, str};
 use lazy_static::lazy_static;
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
-use crate::{
-    format, get_log_targets, get_max_level, init, request, Targets, LOG_OUTPUT, REQUEST_TARGET,
-};
+use crate::config::{get_log_targets, get_max_level};
+use crate::format::Format;
+use crate::{format, init, request, Targets, LOG_OUTPUT, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -263,8 +263,8 @@ fn format() {
 
 fn format_record(record: &Record, debug: bool) -> String {
     let mut bufs = [IoSlice::new(&[]); crate::BUFS_SIZE];
-    let mut buf = format::Buffer::new(format::logfmt::REUSABLE_PARTS);
-    let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
+    let mut buf = format::Buffer::new();
+    let bufs = format::LogFmt::format(&mut bufs, &mut buf, record, debug);
     let mut output = Vec::new();
     let _ = output.write_vectored(bufs).unwrap();
     String::from_utf8(output).unwrap()
