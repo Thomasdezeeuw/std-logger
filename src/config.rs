@@ -65,12 +65,12 @@ impl<F: Format + Send + Sync + 'static> Config<F> {
     /// [`init`]: fn.init.html
     /// [crate level documentation]: index.html
     pub fn try_init(self) -> Result<(), SetLoggerError> {
-        let logger = Logger {
+        let logger = Box::new(Logger {
             filter: self.filter,
             targets: self.targets,
             _format: self._format,
-        };
-        log::set_boxed_logger(Box::new(logger))?;
+        });
+        log::set_boxed_logger(logger)?;
         log::set_max_level(self.filter);
 
         #[cfg(all(feature = "log-panic", not(feature = "nightly")))]
