@@ -62,6 +62,7 @@ impl Buffer {
 #[inline]
 #[cfg(feature = "timestamp")]
 fn format_timestamp(buf: &mut [u8]) {
+    let _ = buf[26];
     let timestamp = crate::timestamp::Timestamp::now();
     let mut itoa = itoa::Buffer::new();
     buf[0..4].copy_from_slice(itoa.format(timestamp.year).as_bytes());
@@ -83,6 +84,7 @@ fn format_timestamp(buf: &mut [u8]) {
 #[inline]
 #[cfg(feature = "timestamp")]
 fn zero_pad2(buf: &mut [u8], v: &[u8]) {
+    let _ = buf[1];
     debug_assert_eq!(buf.len(), 2);
     if v.len() == 1 {
         buf[0] = b'0';
@@ -96,6 +98,7 @@ fn zero_pad2(buf: &mut [u8], v: &[u8]) {
 #[inline]
 #[cfg(feature = "timestamp")]
 fn zero_pad6(buf: &mut [u8], v: &[u8]) {
+    let _ = buf[5];
     debug_assert_eq!(buf.len(), 6);
     let start = 6 - v.len();
     for b in buf.iter_mut().take(start) {
