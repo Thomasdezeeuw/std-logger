@@ -132,7 +132,7 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
     let backtrace = Backtrace::force_capture();
 
     log::logger().log(
-        &Record::builder()
+        &log::Record::builder()
             .args(format_args!(
                 // NOTE: we include file in here because it's only logged when
                 // debug severity is enabled.
