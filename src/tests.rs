@@ -10,8 +10,8 @@ use lazy_static::lazy_static;
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level};
-use crate::format::Format;
-use crate::{format, init, request, Targets, LOG_OUTPUT, REQUEST_TARGET};
+use crate::format::{self, Format, Gcloud, LogFmt};
+use crate::{init, request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -201,16 +201,16 @@ fn targets_should_log() {
     }
 }
 
-#[test]
-fn format() {
-    struct MyDisplay;
+struct MyDisplay;
 
-    impl fmt::Display for MyDisplay {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(f, "MyDisplay")
-        }
+impl fmt::Display for MyDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "MyDisplay")
     }
+}
 
+#[test]
+fn format_logfmt() {
     let record1 = Record::builder()
         .args(format_args!("some arguments1"))
         .level(Level::Info)
@@ -249,7 +249,7 @@ fn format() {
     ];
 
     for (record, debug, want) in tests {
-        let got = format_record(record, *debug);
+        let got = format_record::<LogFmt>(record, *debug);
         #[allow(unused_mut)]
         let mut want = (*want).to_owned();
         #[cfg(feature = "timestamp")]
@@ -261,10 +261,64 @@ fn format() {
     }
 }
 
-fn format_record(record: &Record, debug: bool) -> String {
-    let mut bufs = [IoSlice::new(&[]); crate::BUFS_SIZE];
+#[test]
+fn format_gcloud() {
+    let record1 = Record::builder()
+        .args(format_args!("some arguments1"))
+        .level(Level::Info)
+        .target("some_target1")
+        .module_path_static(Some("module_path1"))
+        .file_static(Some("file1"))
+        .line(Some(123))
+        .key_values(&("key1", "value1"))
+        .build();
+    let kvs = &[
+        ("key2a", (&"value2") as &dyn kv::ToValue),
+        ("key2b", &123u64),
+        ("key3c", &-123i64),
+        ("key3d", &123.0f64),
+        ("key2e", &true),
+        ("key2f", &false),
+        ("key2g", &'c'),
+        ("key2\"g", &(&MyDisplay as &dyn fmt::Display)),
+    ];
+    let kvs: &[(&str, &dyn kv::ToValue)] = kvs.deref();
+    let kvs: &dyn kv::Source = &kvs;
+    let record2 = Record::builder()
+        .args(format_args!("arguments2"))
+        .level(Level::Error)
+        .target("second_target")
+        .module_path_static(Some("module_path1"))
+        .file_static(Some("file2"))
+        .line(Some(111))
+        .key_values(kvs)
+        .build();
+
+    let tests = &[
+        (record1.clone(), true, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n"),
+        (record1, false, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n"),
+        (record2, true, "{\"severity\":\"ERROR\",\"message\":\"arguments2\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n"),
+    ];
+
+    for (record, debug, want) in tests {
+        let got = format_record::<Gcloud>(record, *debug);
+        #[allow(unused_mut)]
+        let mut want = (*want).to_owned();
+        #[cfg(feature = "timestamp")]
+        {
+            let timestamp = add_timestamp(String::new(), SystemTime::now(), &got[10..]);
+            let timestamp = format!("\"timestamp\":\"{}\",", &timestamp[4..timestamp.len() - 2]);
+            want.insert_str(1, &timestamp);
+        }
+
+        assert_eq!(got, *want);
+    }
+}
+
+fn format_record<F: Format>(record: &Record, debug: bool) -> String {
+    let mut bufs = [IoSlice::new(&[]); BUFS_SIZE];
     let mut buf = format::Buffer::new();
-    let bufs = format::LogFmt::format(&mut bufs, &mut buf, record, debug);
+    let bufs = F::format(&mut bufs, &mut buf, record, debug);
     let mut output = Vec::new();
     let _ = output.write_vectored(bufs).unwrap();
     String::from_utf8(output).unwrap()

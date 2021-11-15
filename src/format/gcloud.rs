@@ -62,7 +62,7 @@ impl Format for Gcloud {
             bufs[14] = IoSlice::new(b"\"}}\n");
             15
         } else {
-            bufs[10] = IoSlice::new(b"\"}\n");
+            bufs[10] = IoSlice::new(b"}\n");
             11
         };
         &bufs[..n]
@@ -156,7 +156,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
         self.0.push(b',');
         self.0.push(b'"');
-        self.0.extend_from_slice(key.as_str().as_bytes());
+        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), key.as_str());
         self.0.push(b'"');
         self.0.push(b':');
         // TODO: use key-value visitor proposed here:
