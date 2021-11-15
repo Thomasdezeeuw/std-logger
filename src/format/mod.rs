@@ -1,12 +1,32 @@
-pub(crate) mod gcloud;
-pub(crate) mod logfmt;
+use std::io::IoSlice;
 
-// Allow easy access as `format::$format`.
-pub(crate) use gcloud::format as gcloud;
-pub(crate) use logfmt::format as logfmt;
+use log::Record;
+
+pub(crate) mod gcloud;
+pub(crate) use gcloud::Gcloud;
+
+pub(crate) mod logfmt;
+pub(crate) use logfmt::LogFmt;
+
+/// Trait that defines how to format a [`log::Record`].
+pub trait Format {
+    /// Formats a log `record`.
+    ///
+    /// This writes into the buffer `buf` for things that need formatting, which
+    /// it resets itself. The returned slices is based on `bufs`, which is used
+    /// to order the writable buffers.
+    ///
+    /// If `debug` is `true` the file and line are added.
+    fn format<'b>(
+        bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
+        buf: &'b mut Buffer,
+        record: &'b Record,
+        debug: bool,
+    ) -> &'b [IoSlice<'b>];
+}
 
 /// Number of buffers the format functions require.
-pub(crate) const BUFS_SIZE: usize = 14;
+pub const BUFS_SIZE: usize = 16;
 
 /// Number of indices used in `Buffer`:
 /// 0) Message.
@@ -15,21 +35,19 @@ pub(crate) const BUFS_SIZE: usize = 14;
 const N_INDICES: usize = 3;
 
 /// Formatting buffer.
-pub(crate) struct Buffer {
+#[derive(Debug)]
+pub struct Buffer {
     buf: Vec<u8>,
     indices: [usize; N_INDICES],
 }
 
 impl Buffer {
     /// Create a new format `Buffer`.
-    ///
-    /// `reusable_parts` MUST be the `REUSABLE_PARTS` constant.
-    pub(crate) fn new(reusable_parts: &[u8]) -> Buffer {
-        let mut buf = Vec::with_capacity(1024);
-        // Write the parts of output that can be reused.
-        buf.extend_from_slice(reusable_parts);
-        let indices = [0; N_INDICES];
-        Buffer { buf, indices }
+    pub(crate) fn new() -> Buffer {
+        Buffer {
+            buf: vec![0; 1024],
+            indices: [0; N_INDICES],
+        }
     }
 }
 
@@ -47,12 +65,19 @@ fn format_timestamp(buf: &mut [u8]) {
     let timestamp = crate::timestamp::Timestamp::now();
     let mut itoa = itoa::Buffer::new();
     buf[0..4].copy_from_slice(itoa.format(timestamp.year).as_bytes());
+    buf[4] = b'-';
     zero_pad2(&mut buf[5..7], itoa.format(timestamp.month).as_bytes());
+    buf[7] = b'-';
     zero_pad2(&mut buf[8..10], itoa.format(timestamp.day).as_bytes());
+    buf[10] = b'T';
     zero_pad2(&mut buf[11..13], itoa.format(timestamp.hour).as_bytes());
+    buf[13] = b':';
     zero_pad2(&mut buf[14..16], itoa.format(timestamp.min).as_bytes());
+    buf[16] = b':';
     zero_pad2(&mut buf[17..19], itoa.format(timestamp.sec).as_bytes());
+    buf[19] = b'.';
     zero_pad6(&mut buf[20..26], itoa.format(timestamp.micro).as_bytes());
+    buf[26] = b'Z';
 }
 
 #[inline]

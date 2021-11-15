@@ -232,13 +232,16 @@
 #![cfg_attr(all(feature = "log-panic", feature = "nightly"), feature(backtrace))]
 
 use std::cell::RefCell;
-use std::env;
 use std::io::{self, IoSlice, Write};
+use std::marker::PhantomData;
 
 use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
 
 mod format;
-use format::{Buffer, BUFS_SIZE};
+use format::{Buffer, Format, BUFS_SIZE};
+
+mod config;
+pub use config::Config;
 
 #[cfg(feature = "timestamp")]
 mod timestamp;
@@ -273,114 +276,27 @@ macro_rules! request {
 #[doc(hidden)]
 pub use log as _log;
 
-/// Initialise the logger.
+/// Convenience method to quick initialise the logger.
 ///
-/// See the [crate level documentation] for more.
-///
-/// [crate level documentation]: index.html
-///
-/// # Panics
-///
-/// This will panic if the logger fails to initialise. Use [`try_init`] if you
-/// want to handle the error yourself.
+/// This is shortcut for `Config::logfmt().init()`.
 pub fn init() {
-    try_init().unwrap_or_else(|err| panic!("failed to initialise the logger: {}", err));
+    Config::logfmt().init();
 }
 
-/// Try to initialise the logger.
+/// Convenience method to quick initialise the logger.
 ///
-/// Unlike [`init`] this doesn't panic when the logger fails to initialise. See
-/// the [crate level documentation] for more.
-///
-/// [`init`]: fn.init.html
-/// [crate level documentation]: index.html
+/// This is shortcut for `Config::logfmt().try_init()`.
 pub fn try_init() -> Result<(), SetLoggerError> {
-    let filter = get_max_level();
-    let targets = get_log_targets();
-    let logger = Logger { filter, targets };
-    log::set_boxed_logger(Box::new(logger))?;
-    log::set_max_level(filter);
-
-    #[cfg(all(feature = "log-panic", not(feature = "nightly")))]
-    log_panics::init();
-    #[cfg(all(feature = "log-panic", feature = "nightly"))]
-    std::panic::set_hook(Box::new(log_panic));
-    Ok(())
-}
-
-/// Get the maximum log level based on the environment.
-fn get_max_level() -> LevelFilter {
-    for var in &["LOG", "LOG_LEVEL"] {
-        if let Ok(level) = env::var(var) {
-            if let Ok(level) = level.parse() {
-                return level;
-            }
-        }
-    }
-
-    if env::var("TRACE").is_ok() {
-        LevelFilter::Trace
-    } else if env::var("DEBUG").is_ok() {
-        LevelFilter::Debug
-    } else {
-        LevelFilter::Info
-    }
-}
-
-/// Get the targets to log, if any.
-fn get_log_targets() -> Targets {
-    match env::var("LOG_TARGET") {
-        Ok(ref targets) if !targets.is_empty() => {
-            Targets::Only(targets.split(',').map(|target| target.into()).collect())
-        }
-        _ => Targets::All,
-    }
-}
-
-/// Panic hook that logs the panic using [`log::error!`].
-#[cfg(all(feature = "log-panic", feature = "nightly"))]
-fn log_panic(info: &std::panic::PanicInfo<'_>) {
-    use std::backtrace::Backtrace;
-    use std::thread;
-
-    let thread = thread::current();
-    let thread_name = thread.name().unwrap_or("unnamed");
-    let msg = match info.payload().downcast_ref::<&'static str>() {
-        Some(s) => *s,
-        None => match info.payload().downcast_ref::<String>() {
-            Some(s) => &**s,
-            None => "<unknown>",
-        },
-    };
-    let (file, line) = match info.location() {
-        Some(location) => (location.file(), location.line()),
-        None => ("<unknown>", 0),
-    };
-    let backtrace = Backtrace::force_capture();
-
-    log::logger().log(
-        &Record::builder()
-            .args(format_args!(
-                // NOTE: we include file in here because it's only logged when
-                // debug severity is enabled.
-                "thread '{}' panicked at '{}', {}:{}",
-                thread_name, msg, file, line
-            ))
-            .level(log::Level::Error)
-            .target("panic")
-            .file(Some(file))
-            .line(Some(line))
-            .key_values(&("backtrace", &backtrace as &dyn std::fmt::Display))
-            .build(),
-    );
+    Config::logfmt().try_init()
 }
 
 /// Our `Log` implementation.
-struct Logger {
+struct Logger<F> {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
     /// What logging targets to log.
     targets: Targets,
+    _format: PhantomData<F>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -411,14 +327,14 @@ impl Targets {
     }
 }
 
-impl Log for Logger {
+impl<F: Format + Sync + Send> Log for Logger<F> {
     fn enabled(&self, metadata: &Metadata) -> bool {
         self.filter >= metadata.level() && self.targets.should_log(metadata.target())
     }
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            log(record, self.filter >= LevelFilter::Debug);
+            log::<F>(record, self.filter >= LevelFilter::Debug);
         }
     }
 
@@ -428,11 +344,11 @@ impl Log for Logger {
 }
 
 /// The actual logging of a record.
-fn log(record: &Record, debug: bool) {
+fn log<F: Format>(record: &Record, debug: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
     thread_local! {
-        static BUF: RefCell<Buffer> = RefCell::new(Buffer::new(format::logfmt::REUSABLE_PARTS));
+        static BUF: RefCell<Buffer> = RefCell::new(Buffer::new());
     }
 
     BUF.with(|buf| {
@@ -440,7 +356,7 @@ fn log(record: &Record, debug: bool) {
         match buf.try_borrow_mut() {
             Ok(mut buf) => {
                 // NOTE: keep in sync with the `Err` branch below.
-                let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
@@ -449,13 +365,13 @@ fn log(record: &Record, debug: bool) {
             }
             Err(_) => {
                 // NOTE: We only get to this branch if we're panicking while
-                // calling `format::logfmt`, e.g. when a `fmt::Display` impl in
-                // the `record` panics, and the `log-panic` feature is enabled
-                // which calls `error!` and in turn this function again, while
-                // still borrowing `BUF`.
-                let mut buf = Buffer::new(format::logfmt::REUSABLE_PARTS);
+                // calling `F::format`, e.g. when a `fmt::Display` impl in the
+                // `record` panics, and the `log-panic` feature is enabled which
+                // calls `error!` and in turn this function again, while still
+                // borrowing `BUF`.
+                let mut buf = Buffer::new();
                 // NOTE: keep in sync with the `Ok` branch above.
-                let bufs = format::logfmt(&mut bufs, &mut buf, record, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
