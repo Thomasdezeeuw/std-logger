@@ -1,6 +1,6 @@
 use std::io::IoSlice;
 
-use log::Record;
+use log::{kv, Record};
 
 pub(crate) mod gcloud;
 pub(crate) use gcloud::Gcloud;
@@ -17,10 +17,11 @@ pub trait Format {
     /// to order the writable buffers.
     ///
     /// If `debug` is `true` the file and line are added.
-    fn format<'b>(
+    fn format<'b, Kvs: kv::Source>(
         bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
         buf: &'b mut Buffer,
         record: &'b Record,
+        kvs: &Kvs,
         debug: bool,
     ) -> &'b [IoSlice<'b>];
 }
