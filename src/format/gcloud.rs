@@ -17,10 +17,11 @@ use crate::format::{Buffer, Format, BUFS_SIZE};
 pub enum Gcloud {}
 
 impl Format for Gcloud {
-    fn format<'b>(
+    fn format<'b, Kvs: kv::Source>(
         bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
         buf: &'b mut Buffer,
         record: &'b Record,
+        kvs: &Kvs,
         debug: bool,
     ) -> &'b [IoSlice<'b>] {
         // Write all parts of the buffer that need formatting.
@@ -28,7 +29,7 @@ impl Format for Gcloud {
         #[cfg(feature = "timestamp")]
         write_timestamp(buf);
         write_msg(buf, record.args());
-        write_key_values(buf, record.key_values());
+        write_key_values(buf, record.key_values(), kvs);
         if debug {
             write_line(buf, record.line().unwrap_or(0));
         }
@@ -122,12 +123,13 @@ fn msg(buf: &Buffer) -> &[u8] {
 }
 
 #[inline]
-fn write_key_values(buf: &mut Buffer, kvs: &dyn kv::Source) {
+fn write_key_values<Kvs: kv::Source>(buf: &mut Buffer, kvs1: &dyn kv::Source, kvs2: Kvs) {
     buf.buf.extend_from_slice(b"\"");
     // TODO: see if we can add to the slice of `IoSlice` using the keys
     // and string values.
     let mut visitor = KeyValueVisitor(&mut buf.buf);
-    kvs.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
+    kvs1.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
+    kvs2.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
     buf.indices[1] = buf.buf.len();
 }
 

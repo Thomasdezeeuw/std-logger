@@ -9,7 +9,7 @@ use std::{env, fmt, panic, str};
 use lazy_static::lazy_static;
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
-use crate::config::{get_log_targets, get_max_level};
+use crate::config::{get_log_targets, get_max_level, NoKvs};
 use crate::format::{self, Format, Gcloud, LogFmt};
 use crate::{init, request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
 
@@ -318,7 +318,7 @@ fn format_gcloud() {
 fn format_record<F: Format>(record: &Record, debug: bool) -> String {
     let mut bufs = [IoSlice::new(&[]); BUFS_SIZE];
     let mut buf = format::Buffer::new();
-    let bufs = F::format(&mut bufs, &mut buf, record, debug);
+    let bufs = F::format(&mut bufs, &mut buf, record, &NoKvs, debug);
     let mut output = Vec::new();
     let _ = output.write_vectored(bufs).unwrap();
     String::from_utf8(output).unwrap()

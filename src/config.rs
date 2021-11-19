@@ -3,7 +3,7 @@
 use std::env;
 use std::marker::PhantomData;
 
-use log::{LevelFilter, SetLoggerError};
+use log::{kv, LevelFilter, SetLoggerError};
 
 use crate::format::{Format, Gcloud, LogFmt};
 use crate::{Logger, Targets};
@@ -14,31 +14,50 @@ use crate::{Logger, Targets};
 ///  * [`logfmt`](Config::logfmt) and
 ///  * [`gcloud`](Config::gcloud).
 #[derive(Debug)]
-pub struct Config<F> {
+pub struct Config<F, Kvs> {
     filter: LevelFilter,
     targets: Targets,
+    kvs: Kvs,
     _format: PhantomData<F>,
 }
 
-impl Config<()> {
+impl Config<(), NoKvs> {
     /// Logfmt following <https://www.brandur.org/logfmt>.
-    pub fn logfmt() -> Config<LogFmt> {
-        Config::new()
+    pub fn logfmt() -> Config<LogFmt, NoKvs> {
+        Config::new(NoKvs)
     }
 
     /// Google Cloud Platform structured logging using JSON, following
     /// <https://cloud.google.com/logging/docs/structured-logging>.
-    pub fn gcloud() -> Config<Gcloud> {
-        Config::new()
+    pub fn gcloud() -> Config<Gcloud, NoKvs> {
+        Config::new(NoKvs)
     }
 }
 
-impl<F: Format + Send + Sync + 'static> Config<F> {
-    fn new() -> Config<F> {
+impl<F, Kvs> Config<F, Kvs>
+where
+    F: Format + Send + Sync + 'static,
+    Kvs: kv::Source + Send + Sync + 'static,
+{
+    fn new(kvs: Kvs) -> Config<F, Kvs> {
         Config {
             filter: get_max_level(),
             targets: get_log_targets(),
+            kvs,
             _format: PhantomData,
+        }
+    }
+
+    /// Add the key-values `kvs` to all logged messages.
+    pub fn with_kvs<K>(self, kvs: K) -> Config<F, K>
+    where
+        K: kv::Source + Send + Sync + 'static,
+    {
+        Config {
+            filter: self.filter,
+            targets: self.targets,
+            kvs,
+            _format: self._format,
         }
     }
 
@@ -68,6 +87,7 @@ impl<F: Format + Send + Sync + 'static> Config<F> {
         let logger = Box::new(Logger {
             filter: self.filter,
             targets: self.targets,
+            kvs: self.kvs,
             _format: self._format,
         });
         log::set_boxed_logger(logger)?;
@@ -146,4 +166,22 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
             .key_values(&("backtrace", &backtrace as &dyn std::fmt::Display))
             .build(),
     );
+}
+
+/// No initial key-values.
+#[derive(Debug)]
+pub struct NoKvs;
+
+impl kv::Source for NoKvs {
+    fn visit<'kvs>(&'kvs self, _: &mut dyn log::kv::Visitor<'kvs>) -> Result<(), log::kv::Error> {
+        Ok(())
+    }
+
+    fn get<'v>(&'v self, _: log::kv::Key<'_>) -> Option<log::kv::Value<'v>> {
+        None
+    }
+
+    fn count(&self) -> usize {
+        0
+    }
 }

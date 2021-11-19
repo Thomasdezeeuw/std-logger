@@ -235,7 +235,7 @@ use std::cell::RefCell;
 use std::io::{self, IoSlice, Write};
 use std::marker::PhantomData;
 
-use log::{LevelFilter, Log, Metadata, Record, SetLoggerError};
+use log::{kv, LevelFilter, Log, Metadata, Record, SetLoggerError};
 
 mod format;
 use format::{Buffer, Format, BUFS_SIZE};
@@ -291,11 +291,13 @@ pub fn try_init() -> Result<(), SetLoggerError> {
 }
 
 /// Our `Log` implementation.
-struct Logger<F> {
+struct Logger<F, Kvs> {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
     /// What logging targets to log.
     targets: Targets,
+    /// Key-values supplied for all logs.
+    kvs: Kvs,
     _format: PhantomData<F>,
 }
 
@@ -327,14 +329,18 @@ impl Targets {
     }
 }
 
-impl<F: Format + Sync + Send> Log for Logger<F> {
+impl<F, Kvs> Log for Logger<F, Kvs>
+where
+    F: Format + Sync + Send,
+    Kvs: kv::Source + Sync + Send,
+{
     fn enabled(&self, metadata: &Metadata) -> bool {
         self.filter >= metadata.level() && self.targets.should_log(metadata.target())
     }
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            log::<F>(record, self.filter >= LevelFilter::Debug);
+            log::<F, Kvs>(record, &self.kvs, self.filter >= LevelFilter::Debug);
         }
     }
 
@@ -344,7 +350,7 @@ impl<F: Format + Sync + Send> Log for Logger<F> {
 }
 
 /// The actual logging of a record.
-fn log<F: Format>(record: &Record, debug: bool) {
+fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, debug: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
     thread_local! {
@@ -356,7 +362,7 @@ fn log<F: Format>(record: &Record, debug: bool) {
         match buf.try_borrow_mut() {
             Ok(mut buf) => {
                 // NOTE: keep in sync with the `Err` branch below.
-                let bufs = F::format(&mut bufs, &mut buf, record, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, kvs, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
@@ -371,7 +377,7 @@ fn log<F: Format>(record: &Record, debug: bool) {
                 // borrowing `BUF`.
                 let mut buf = Buffer::new();
                 // NOTE: keep in sync with the `Ok` branch above.
-                let bufs = F::format(&mut bufs, &mut buf, record, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, kvs, debug);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),

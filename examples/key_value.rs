@@ -3,7 +3,8 @@ use std_logger::REQUEST_TARGET;
 
 fn main() {
     // Initialize the logger.
-    std_logger::init();
+    let kvs = ("hostname", "node01");
+    std_logger::Config::logfmt().with_kvs(kvs).init();
 
     // Fake the handling of a request.
     logger_middleware(Request {
