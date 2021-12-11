@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.4.2
+
+* `Config` type support multiple logging formats
+  (https://github.com/Thomasdezeeuw/std-logger/commit/2abba6460179296791fe2619fe1f3b2988452eaf).
+* Added JSON formatting for GCP (gcloud)
+  (https://github.com/Thomasdezeeuw/std-logger/commit/b3059695ff22851c7d47986e58c58599b45d4e0d).
+* Added `Config::with_kvs`
+  (https://github.com/Thomasdezeeuw/std-logger/commit/492646c196993877741a7260578d29c89c8b969a).
+* Removed libc dependency
+  (https://github.com/Thomasdezeeuw/std-logger/commit/fc74144f7a1a1b43feaa582d5f3aad2b1bc39f41).
+
 ## v0.4.1
 
 * Fixes handling panics during logging

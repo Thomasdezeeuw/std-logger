@@ -5,7 +5,7 @@ A logging implementation for the log crate that logs messages to standard error
 and requests to standard out. It uses the logfmt standard
 (https://www.brandur.org/logfmt) as format.
 """
-version       = "0.4.1"
+version       = "0.4.2"
 authors       = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
 license       = "MIT/Apache-2.0"
 documentation = "https://docs.rs/std-logger"
@@ -13,7 +13,7 @@ repository    = "https://github.com/Thomasdezeeuw/std-logger"
 readme        = "README.md"
 keywords      = ["logging", "log", "logfmt", "standard"]
 categories    = ["development-tools::debugging"]
-include       = ["Cargo.toml", "src/lib.rs", "src/format.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
+include       = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2018"
 
 [features]
