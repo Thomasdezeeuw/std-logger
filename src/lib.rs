@@ -15,15 +15,15 @@
 //! see the [`log`]'s package [`LevelFilter`] type for available values.
 //!
 //! ```bash
-//! # In your shell of choose:
+//! ## In your shell of choose:
 //!
-//! # Set the log severity to only print log message with info severity or
-//! # higher, trace and debug messages won't be printed anymore.
+//! ## Set the log severity to only print log message with info severity or
+//! ## higher, trace and debug messages won't be printed anymore.
 //! $ LOG=info ./my_binary
 //!
-//! # Set the log severity to only print log message with warning severity or
-//! # higher, informational (or lower severity) messages won't be printed
-//! # anymore.
+//! ## Set the log severity to only print log message with warning severity or
+//! ## higher, informational (or lower severity) messages won't be printed
+//! ## anymore.
 //! $ LOG=warn ./my_binary
 //! ```
 //!
@@ -32,12 +32,12 @@
 //! set the severity to debug.
 //!
 //! ```bash
-//! # In your shell of choose:
+//! ## In your shell of choose:
 //!
-//! # Enables trace logging.
+//! ## Enables trace logging.
 //! $ TRACE=1 ./my_binary
 //!
-//! # Enables debug logging.
+//! ## Enables debug logging.
 //! $ DEBUG=1 ./my_binary
 //! ```
 //!
@@ -69,20 +69,20 @@
 //! `LOG_TARGET` environment variable.
 //!
 //! ```bash
-//! # In your shell of choose:
+//! ## In your shell of choose:
 //!
-//! # Only log messages from your crate.
+//! ## Only log messages from your crate.
 //! $ LOG_TARGET=my_crate ./my_binary
 //!
-//! # Only log messages from the `my_module` module in your crate.
+//! ## Only log messages from the `my_module` module in your crate.
 //! $ LOG_TARGET=my_crate::my_module ./my_binary
 //!
-//! # Multiple log targets are also supported by separating the values by a
-//! # comma.
+//! ## Multiple log targets are also supported by separating the values by a
+//! ## comma.
 //! $ LOG_TARGET=my_crate::my_module,my_crate::my_other_module ./my_binary
 //!
-//! # Very useful in combination with trace severity to get all messages you
-//! # want, but filter out the message you don't need.
+//! ## Very useful in combination with trace severity to get all messages you
+//! ## want, but filter out the message you don't need.
 //! $ LOG_LEVEL=trace LOG_TARGET=my_crate::my_module ./my_binary
 //! ```
 //!
