@@ -15,13 +15,13 @@
 //! see the [`log`]'s package [`LevelFilter`] type for available values.
 //!
 //! ```bash
-//! ## In your shell of choose:
+//! ## In your shell of your choice:
 //!
-//! ## Set the log severity to only print log message with info severity or
+//! ## Set the log severity to only print log messages with info severity or
 //! ## higher, trace and debug messages won't be printed anymore.
 //! $ LOG=info ./my_binary
 //!
-//! ## Set the log severity to only print log message with warning severity or
+//! ## Set the log severity to only print log messages with warning severity or
 //! ## higher, informational (or lower severity) messages won't be printed
 //! ## anymore.
 //! $ LOG=warn ./my_binary
@@ -32,7 +32,7 @@
 //! set the severity to debug.
 //!
 //! ```bash
-//! ## In your shell of choose:
+//! ## In your shell of your choice:
 //!
 //! ## Enables trace logging.
 //! $ TRACE=1 ./my_binary
@@ -44,6 +44,11 @@
 //! If none of these environment variables are found it will default to an
 //! information severity.
 //!
+//! In addition to these runtime filters the [log] crate provides [compile time
+//! filters] which allows you to filter log messages at compile time.
+//!
+//! [log]: mod@log
+//! [compile time filters]: mod@log#compile-time-filters
 //!
 //! # Logging requests
 //!
@@ -93,8 +98,12 @@
 //!
 //! # Format
 //!
-//! The format follows the [logfmt] format. For regular messages, printed to
-//! standard error, the following format is used:
+//! This crate supports two formats [logfmt] and [gcloud]. In the examples below
+//! we'll use the logfmt format as the author believes its easier to read for
+//! humans.
+//!
+//! For regular messages, printed to standard error, the following format is
+//! used:
 //!
 //! ```text
 //! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="$LOG_LEVEL" msg="$message" target="$target" module="$module"
@@ -119,6 +128,7 @@
 //! enabled, this feature is enabled by default, see [Timestamp feature] below.
 //!
 //! [logfmt]: https://www.brandur.org/logfmt
+//! [gcloud]: https://cloud.google.com/logging/docs/structured-logging
 //!
 //!
 //! # Crate features
