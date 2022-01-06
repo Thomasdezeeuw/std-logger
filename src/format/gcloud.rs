@@ -40,7 +40,7 @@ impl Format for Gcloud {
         // Or without a timestamp, i.e. `{"severity":"INFO`.
         bufs[0] = IoSlice::new(timestamp(buf));
         bufs[1] = IoSlice::new(b"\"severity\":\"");
-        bufs[2] = IoSlice::new(record.level().as_str().as_bytes());
+        bufs[2] = IoSlice::new(severity(record.level()));
         // The message (and the end of the log level), e.g. `","message":"some message`.
         bufs[3] = IoSlice::new(b"\",\"message\":\"");
         bufs[4] = IoSlice::new(msg(buf));
@@ -101,6 +101,13 @@ fn write_timestamp(buf: &mut Buffer) {
 #[inline]
 fn timestamp(buf: &Buffer) -> &[u8] {
     &buf.buf[..TS_END_INDEX]
+}
+
+#[inline]
+fn severity(level: log::Level) -> &'static [u8] {
+    // NOTE: gcloud doesn't have trace messages so we use debug twice.
+    const SEVERITIES: [&[u8]; 6] = [b"OFF", b"ERROR", b"WARNING", b"INFO", b"DEBUG", b"DEBUG"];
+    SEVERITIES[level as usize]
 }
 
 #[inline]
