@@ -27,7 +27,7 @@ struct Response {
 
 fn logger_middleware(request: Request) -> Response {
     // Clone the url and method. Note: don't actually do this in an HTTP this is
-    // rather wastefull to.
+    // rather wasteful to.
     let url = request.url.clone();
     let method = request.method.clone();
 
