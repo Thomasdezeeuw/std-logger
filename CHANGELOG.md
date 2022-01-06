@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.3
+
+* Fixes severity names using GCP (gcloud) formatting
+  (https://github.com/Thomasdezeeuw/std-logger/commit/ae98def82d7f9db3a0cce51da16d7614eeec18de).
+
 ## v0.4.2
 
 * `Config` type support multiple logging formats
