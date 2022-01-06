@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.4
+
+* Fixes logging of messages using quotes using GCP (gcloud) formatting
+  (https://github.com/Thomasdezeeuw/std-logger/commit/0c39b7a3c40d07367b66cc0a937793f75a93a35a).
+
 ## v0.4.3
 
 * Fixes severity names using GCP (gcloud) formatting
