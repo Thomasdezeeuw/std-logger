@@ -293,11 +293,17 @@ fn format_gcloud() {
         .line(Some(111))
         .key_values(kvs)
         .build();
+    let record3 = Record::builder()
+        .args(format_args!("panicking!"))
+        .level(Level::Error)
+        .target("panic")
+        .build();
 
     let tests = &[
         (record1.clone(), true, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n"),
         (record1, false, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n"),
         (record2, true, "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n"),
+        (record3, true, "{\"severity\":\"CRITICAL\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"sourceLocation\":{\"file\":\"??\",\"line\":\"0\"}}\n"),
     ];
 
     for (record, debug, want) in tests {

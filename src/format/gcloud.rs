@@ -39,7 +39,12 @@ impl Format for Gcloud {
         // Or without a timestamp, i.e. `{"severity":"INFO`.
         bufs[0] = IoSlice::new(timestamp(buf));
         bufs[1] = IoSlice::new(b"\"severity\":\"");
-        bufs[2] = IoSlice::new(severity(record.level()));
+        if record.level() == log::Level::Error && record.target() == "panic" {
+            // If we're panicking we increase the severity to critical.
+            bufs[2] = IoSlice::new(b"CRITICAL");
+        } else {
+            bufs[2] = IoSlice::new(severity(record.level()));
+        }
         // The message (and the end of the log level), e.g. `","message":"some message`.
         bufs[3] = IoSlice::new(b"\",\"message\":\"");
         bufs[4] = IoSlice::new(msg(buf));
