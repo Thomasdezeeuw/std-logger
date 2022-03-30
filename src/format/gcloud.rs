@@ -4,6 +4,7 @@
 use std::fmt::{self, Write};
 use std::io::IoSlice;
 
+use log::kv::value::Visit;
 use log::{kv, Record};
 
 #[cfg(feature = "timestamp")]
@@ -172,33 +173,58 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
         let _ = fmt::Write::write_str(&mut JsonBuf(self.0), key.as_str());
         self.0.push(b'"');
         self.0.push(b':');
-        // TODO: use key-value visitor proposed here:
-        // <https://github.com/rust-lang/log/issues/440>.
-        if let Some(value) = value.to_borrowed_str() {
-            self.0.push(b'\"');
-            let _ = fmt::Write::write_str(&mut JsonBuf(self.0), value);
-            self.0.push(b'\"');
-        } else if let Some(value) = value.to_u64() {
-            let mut itoa = itoa::Buffer::new();
-            self.0.extend_from_slice(itoa.format(value).as_bytes());
-        } else if let Some(value) = value.to_i64() {
-            let mut itoa = itoa::Buffer::new();
-            self.0.extend_from_slice(itoa.format(value).as_bytes());
-        } else if let Some(value) = value.to_f64() {
-            let mut ryu = ryu::Buffer::new();
-            self.0.extend_from_slice(ryu.format(value).as_bytes());
-        } else if let Some(value) = value.to_bool() {
-            self.0
-                .extend_from_slice(if value { b"true" } else { b"false" });
-        } else if let Some(value) = value.to_char() {
-            self.0.push(b'\"');
-            let _ = fmt::Write::write_char(&mut JsonBuf(self.0), value);
-            self.0.push(b'\"');
-        } else {
-            self.0.push(b'\"');
-            let _ = fmt::Write::write_fmt(&mut JsonBuf(self.0), format_args!("{}", value));
-            self.0.push(b'\"');
-        }
+        value.visit(self)
+    }
+}
+
+impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
+    fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
+        self.0.push(b'\"');
+        let _ = fmt::Write::write_fmt(&mut JsonBuf(self.0), format_args!("{}", value));
+        self.0.push(b'\"');
+        Ok(())
+    }
+
+    fn visit_u64(&mut self, value: u64) -> Result<(), kv::Error> {
+        let mut itoa = itoa::Buffer::new();
+        self.0.extend_from_slice(itoa.format(value).as_bytes());
+        Ok(())
+    }
+
+    fn visit_i64(&mut self, value: i64) -> Result<(), kv::Error> {
+        let mut itoa = itoa::Buffer::new();
+        self.0.extend_from_slice(itoa.format(value).as_bytes());
+        Ok(())
+    }
+
+    fn visit_u128(&mut self, value: u128) -> Result<(), kv::Error> {
+        let mut itoa = itoa::Buffer::new();
+        self.0.extend_from_slice(itoa.format(value).as_bytes());
+        Ok(())
+    }
+
+    fn visit_i128(&mut self, value: i128) -> Result<(), kv::Error> {
+        let mut itoa = itoa::Buffer::new();
+        self.0.extend_from_slice(itoa.format(value).as_bytes());
+        Ok(())
+    }
+
+    fn visit_f64(&mut self, value: f64) -> Result<(), kv::Error> {
+        let mut ryu = ryu::Buffer::new();
+        self.0.extend_from_slice(ryu.format(value).as_bytes());
+        Ok(())
+    }
+
+    fn visit_bool(&mut self, value: bool) -> Result<(), kv::Error> {
+        self.0
+            .extend_from_slice(if value { b"true" } else { b"false" });
+        Ok(())
+    }
+
+    fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
+        self.0.push(b'\"');
+        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), value);
+        self.0.push(b'\"');
         Ok(())
     }
 }
