@@ -323,18 +323,19 @@ impl Targets {
     /// Returns `true` if the `target` should be logged.
     fn should_log(&self, target: &str) -> bool {
         if target == REQUEST_TARGET || target == "panic" {
-            // Always log requests.
-            true
-        } else if let Targets::Only(targets) = self {
-            // Log all targets that start with an allowed target. This way we
-            // can just use `LOG_TARGET=my_crate`, rather then
-            // `LOG_TARGET=my_crate::module1,my_crate::module2` etc.
-            targets
-                .iter()
-                .any(|log_target| target.starts_with(&**log_target))
-        } else {
-            // All targets should be logged.
-            true
+            // Always log requests and panics.
+            return true;
+        }
+        match self {
+            Targets::All => true, // All targets should be logged.
+            Targets::Only(targets) => {
+                // Log all targets that start with an allowed target. This way
+                // we can just use `LOG_TARGET=my_crate`, rather then
+                // `LOG_TARGET=my_crate::module1,my_crate::module2` etc.
+                targets
+                    .iter()
+                    .any(|log_target| target.starts_with(&**log_target))
+            }
         }
     }
 }
