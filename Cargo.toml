@@ -15,7 +15,7 @@ readme        = "README.md"
 keywords      = ["logging", "log", "logfmt", "standard"]
 categories    = ["development-tools::debugging"]
 include       = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
-edition       = "2018"
+edition       = "2021"
 
 [features]
 default   = ["timestamp", "log-panic"]
