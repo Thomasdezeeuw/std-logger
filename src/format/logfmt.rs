@@ -93,12 +93,12 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     #[cfg(not(feature = "nightly"))]
-    write!(buf.buf, "{}", args).unwrap_or_else(|_| unreachable!());
+    write!(buf.buf, "{args}").unwrap_or_else(|_| unreachable!());
     #[cfg(feature = "nightly")]
     if let Some(msg) = args.as_str() {
         buf.buf.extend_from_slice(msg.as_bytes());
     } else {
-        write!(buf.buf, "{}", args).unwrap_or_else(|_| unreachable!());
+        write!(buf.buf, "{args}").unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }
@@ -154,7 +154,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
 impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        write!(self.0, "{}", value).unwrap_or_else(|_| unreachable!());
+        write!(self.0, "{value}").unwrap_or_else(|_| unreachable!());
         self.0.push(b'\"');
         Ok(())
     }
