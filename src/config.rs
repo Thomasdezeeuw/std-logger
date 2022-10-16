@@ -138,26 +138,16 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
 
     let thread = thread::current();
     let thread_name = thread.name().unwrap_or("unnamed");
-    let msg = match info.payload().downcast_ref::<&'static str>() {
-        Some(s) => s,
-        None => match info.payload().downcast_ref::<String>() {
-            Some(s) => s,
-            None => "<unknown>",
-        },
-    };
-    let (file, line, col) = match info.location() {
-        Some(location) => (location.file(), location.line(), location.column()),
-        None => ("<unknown>", 0, 0),
+    let (file, line) = match info.location() {
+        Some(location) => (location.file(), location.line()),
+        None => ("<unknown>", 0),
     };
     let backtrace = Backtrace::force_capture();
 
     log::logger().log(
         &log::Record::builder()
-            .args(format_args!(
-                // NOTE: we include file in here because it's only logged when
-                // debug severity is enabled.
-                "thread '{thread_name}' panicked at '{msg}', {file}:{line}:{col}"
-            ))
+            // Format for {info}: "panicked at '$message', $file:$line:$col".
+            .args(format_args!("thread '{thread_name}' {info}"))
             .level(log::Level::Error)
             .target(PANIC_TARGET)
             .file(Some(file))
