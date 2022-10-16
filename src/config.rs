@@ -93,9 +93,7 @@ where
         log::set_boxed_logger(logger)?;
         log::set_max_level(self.filter);
 
-        #[cfg(all(feature = "log-panic", not(feature = "nightly")))]
-        log_panics::init();
-        #[cfg(all(feature = "log-panic", feature = "nightly"))]
+        #[cfg(feature = "log-panic")]
         std::panic::set_hook(Box::new(log_panic));
         Ok(())
     }
@@ -131,7 +129,7 @@ pub(crate) fn get_log_targets() -> Targets {
 }
 
 /// Panic hook that logs the panic using [`log::error!`].
-#[cfg(all(feature = "log-panic", feature = "nightly"))]
+#[cfg(feature = "log-panic")]
 fn log_panic(info: &std::panic::PanicInfo<'_>) {
     use std::backtrace::Backtrace;
     use std::thread;

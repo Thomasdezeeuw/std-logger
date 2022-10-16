@@ -118,9 +118,6 @@ fn severity(level: log::Level) -> &'static [u8] {
 #[inline]
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
-    #[cfg(not(feature = "nightly"))]
-    write!(JsonBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
-    #[cfg(feature = "nightly")]
     if let Some(msg) = args.as_str() {
         JsonBuf(&mut buf.buf).extend_from_slice(msg.as_bytes());
     } else {
@@ -233,7 +230,6 @@ impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
 struct JsonBuf<'b>(&'b mut Vec<u8>);
 
 impl<'b> JsonBuf<'b> {
-    #[cfg(feature = "nightly")]
     fn extend_from_slice(&mut self, bytes: &[u8]) {
         for b in bytes {
             self.write_char(*b as char)
