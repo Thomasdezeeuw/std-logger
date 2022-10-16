@@ -6,6 +6,8 @@ use std::marker::PhantomData;
 use log::{kv, LevelFilter, SetLoggerError};
 
 use crate::format::{Format, Gcloud, LogFmt};
+#[cfg(feature = "log-panic")]
+use crate::PANIC_TARGET;
 use crate::{Logger, Targets};
 
 /// Configuration of the logger.
@@ -157,7 +159,7 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
                 "thread '{thread_name}' panicked at '{msg}', {file}:{line}"
             ))
             .level(log::Level::Error)
-            .target("panic")
+            .target(PANIC_TARGET)
             .file(Some(file))
             .line(Some(line))
             .key_values(&("backtrace", &backtrace as &dyn std::fmt::Display))

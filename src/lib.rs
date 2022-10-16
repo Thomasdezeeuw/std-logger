@@ -266,6 +266,9 @@ mod tests;
 /// [crate level documentation]: index.html#logging-requests
 pub const REQUEST_TARGET: &str = "request";
 
+/// Target for logging panics.
+pub const PANIC_TARGET: &str = "panic";
+
 /// Logs a request.
 ///
 /// This uses [info] level severity and the [`REQUEST_TARGET`] target to log a
@@ -320,7 +323,7 @@ enum Targets {
 impl Targets {
     /// Returns `true` if the `target` should be logged.
     fn should_log(&self, target: &str) -> bool {
-        if target == REQUEST_TARGET || target == "panic" {
+        if target == REQUEST_TARGET || target == PANIC_TARGET {
             // Always log requests and panics.
             return true;
         }
