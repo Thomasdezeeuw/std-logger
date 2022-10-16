@@ -1,6 +1,6 @@
 //! A crate that holds a logging implementation that logs to standard error and
 //! standard out. It uses standard error for all regular messages and standard
-//! out for requests.
+//! out for requests. To initialise the logger use [`Config`].
 //!
 //! This crate provides only a logging implementation. To do actual logging use
 //! the [`log`] crate and it's various macros.
@@ -207,7 +207,7 @@
 //! fn main() {
 //!     // First thing we need to do is initialise the logger before anything
 //!     // else.
-//!     std_logger::init();
+//!     std_logger::Config::logfmt().init();
 //!
 //!     // Now we can start logging!
 //!     info!("Our application started!");
@@ -243,7 +243,7 @@ use std::cell::RefCell;
 use std::io::{self, IoSlice, Write};
 use std::marker::PhantomData;
 
-use log::{kv, LevelFilter, Log, Metadata, Record, SetLoggerError};
+use log::{kv, LevelFilter, Log, Metadata, Record};
 
 mod format;
 use format::{Buffer, Format, BUFS_SIZE};
@@ -286,20 +286,6 @@ macro_rules! request {
 // Not part of the API. Only here for use in the `request!` macro.
 #[doc(hidden)]
 pub use log as _log;
-
-/// Convenience method to quick initialise the logger.
-///
-/// This is shortcut for `Config::logfmt().init()`.
-pub fn init() {
-    Config::logfmt().init();
-}
-
-/// Convenience method to quick initialise the logger.
-///
-/// This is shortcut for `Config::logfmt().try_init()`.
-pub fn try_init() -> Result<(), SetLoggerError> {
-    Config::logfmt().try_init()
-}
 
 /// Our `Log` implementation.
 struct Logger<F, Kvs> {

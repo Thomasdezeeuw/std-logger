@@ -10,7 +10,7 @@ use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level, NoKvs};
 use crate::format::{self, Format, Gcloud, LogFmt};
-use crate::{init, request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
+use crate::{request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -83,7 +83,7 @@ sequential_tests! {
         LOG_OUTPUT.lock().unwrap().clear();
 
         env::set_var("LOG_LEVEL", "TRACE");
-        init();
+        crate::Config::logfmt().init();
         env::remove_var("LOG_LEVEL");
 
         let want = &[
