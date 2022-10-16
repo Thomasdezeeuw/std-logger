@@ -124,7 +124,7 @@ pub(crate) fn get_max_level() -> LevelFilter {
 pub(crate) fn get_log_targets() -> Targets {
     match env::var("LOG_TARGET") {
         Ok(ref targets) if !targets.is_empty() => {
-            Targets::Only(targets.split(',').map(|target| target.into()).collect())
+            Targets::Only(targets.split(',').map(Into::into).collect())
         }
         _ => Targets::All,
     }
@@ -139,9 +139,9 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
     let thread = thread::current();
     let thread_name = thread.name().unwrap_or("unnamed");
     let msg = match info.payload().downcast_ref::<&'static str>() {
-        Some(s) => *s,
+        Some(s) => s,
         None => match info.payload().downcast_ref::<String>() {
-            Some(s) => &**s,
+            Some(s) => s,
             None => "<unknown>",
         },
     };
