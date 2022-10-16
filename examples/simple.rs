@@ -3,7 +3,7 @@ use std_logger::request;
 
 fn main() {
     // Initialize the logger.
-    std_logger::init();
+    std_logger::Config::logfmt().init();
 
     // Fake the handling of a request.
     logger_middleware(Request {

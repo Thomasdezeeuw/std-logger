@@ -10,7 +10,7 @@ use log::info;
 #[test]
 #[should_panic = "panic during formatting"]
 fn panicking_while_logging() {
-    std_logger::init();
+    std_logger::Config::logfmt().init();
 
     struct T;
 

@@ -3,7 +3,7 @@ fn main() {
     use log::info;
 
     // Initialize the logger.
-    std_logger::init();
+    std_logger::Config::logfmt().init();
 
     // This will only be logged when using a environment variable to set the log
     // level to info or lower, e.g. using `LOG_LEVEL=info`.
