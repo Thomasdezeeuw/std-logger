@@ -145,9 +145,9 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
             None => "<unknown>",
         },
     };
-    let (file, line) = match info.location() {
-        Some(location) => (location.file(), location.line()),
-        None => ("<unknown>", 0),
+    let (file, line, col) = match info.location() {
+        Some(location) => (location.file(), location.line(), location.column()),
+        None => ("<unknown>", 0, 0),
     };
     let backtrace = Backtrace::force_capture();
 
@@ -156,7 +156,7 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
             .args(format_args!(
                 // NOTE: we include file in here because it's only logged when
                 // debug severity is enabled.
-                "thread '{thread_name}' panicked at '{msg}', {file}:{line}"
+                "thread '{thread_name}' panicked at '{msg}', {file}:{line}:{col}"
             ))
             .level(log::Level::Error)
             .target(PANIC_TARGET)
