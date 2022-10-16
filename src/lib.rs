@@ -6,6 +6,67 @@
 //! the [`log`] crate and it's various macros.
 //!
 //!
+//! # Supported Formats
+//!
+//! This crate supports the two following formats:
+//!
+//! * Logfmt, following <https://www.brandur.org/logfmt>, use
+//! [`Config::logfmt`].
+//! * Google Cloud Platform structured logging using JSON, following
+//! <https://cloud.google.com/logging/docs/structured-logging>, [`Config::gcloud`].
+//!
+//! ### Logfmt
+//!
+//! For regular messages, printed to standard error, Logfmt looks like the
+//! following:
+//!
+//! ```text
+//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="$LOG_LEVEL" msg="$message" target="$target" module="$module"
+//!
+//! For example:
+//!
+//! ts="2018-03-24T13:48:28.820588Z" lvl="ERROR" msg="my error message" target="my_module" module="my_module"
+//! ```
+//!
+//! Requests or access messages, logged using the [`REQUEST_TARGET`] target or
+//! the [`request`] macro, are printed to standard out using following format:
+//!
+//! ```text
+//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="INFO" msg="$message" target="request" module="$module"
+//!
+//! For example:
+//!
+//! ts="2018-03-24T13:30:28.820588Z" lvl="INFO" msg="my request message" target="request" module="my_module"
+//! ```
+//!
+//! Note: the timestamp is not printed when the *timestamp* feature is not
+//! enabled, this feature is enabled by default, see [Timestamp feature] below.
+//!
+//! ### Gcloud (GCP JSON)
+//!
+//! Google Cloud Platform structured logging using JSON, or just gcloud for
+//! short, uses JSON for messages. Regular messages are printed to standard
+//! error and look like the following:
+//!
+//! ```text
+//! {"timestamp":"YYYY-MM-DDTHH:MM:SS.MICROSZ","severity":"$LOG_LEVEL","message":"$message","target":"$module","module":"$module"}
+//!
+//! For example:
+//!
+//! {"timestamp":"2018-03-24T13:48:28.820588Z","severity":"ERROR","message":"my error message","target":"my_module","module":"my_module"}
+//! ```
+//!
+//! Note: the timestamp is not printed when the *timestamp* feature is not
+//! enabled, this feature is enabled by default, see [Timestamp feature] below.
+//!
+//! The format for requests looks the same, but are logged to standard out.
+//! There are some things to note that are special for the gcloud format:
+//!
+//!  * Panics are logged using the `CRITICAL` severity instead of `ERROR`.
+//!  * When debug logging is enabled `sourceLocation` is added with the file and
+//!    line information to all logs, if the source information is provided.
+//!
+//!
 //! # Setting severity
 //!
 //! You can use various environment variables to change the severity (log level)
@@ -82,53 +143,18 @@
 //! ## Only log messages from the `my_module` module in your crate.
 //! $ LOG_TARGET=my_crate::my_module ./my_binary
 //!
-//! ## Multiple log targets are also supported by separating the values by a
-//! ## comma.
+//! ## Multiple log targets are also supported by separating the values by a comma.
 //! $ LOG_TARGET=my_crate::my_module,my_crate::my_other_module ./my_binary
 //!
 //! ## Very useful in combination with trace severity to get all messages you
-//! ## want, but filter out the message you don't need.
+//! ## want, but filter out the messages for crates you're not interested in.
 //! $ LOG_LEVEL=trace LOG_TARGET=my_crate::my_module ./my_binary
 //! ```
 //!
-//! Note that [requests] and panics (with target="panic") are always logged.
+//! Note that [requests] and panics (with [target="panic"]) are always logged.
 //!
 //! [requests]: index.html#logging-requests
-//!
-//!
-//! # Format
-//!
-//! This crate supports two formats [logfmt] and [gcloud]. In the examples below
-//! we'll use the logfmt format as the author believes its easier to read for
-//! humans.
-//!
-//! For regular messages, printed to standard error, the following format is
-//! used:
-//!
-//! ```text
-//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="$LOG_LEVEL" msg="$message" target="$target" module="$module"
-//!
-//! For example:
-//!
-//! ts="2018-03-24T13:48:28.820588Z" lvl="ERROR" msg="my error message" target="my_module" module="my_module"
-//! ```
-//!
-//! For requests, logged using the [`REQUEST_TARGET`] target or the [`request`]
-//! macro and printed to standard out, the following format is used:
-//!
-//! ```text
-//! ts="YYYY-MM-DDTHH:MM:SS.MICROSZ" lvl="INFO" msg="$message" target="request" module="$module"
-//!
-//! For example:
-//!
-//! ts="2018-03-24T13:30:28.820588Z" lvl="INFO" msg="my request message" target="request" module="my_module"
-//! ```
-//!
-//! Note: the timestamp is not printed when the *timestamp* feature is not
-//! enabled, this feature is enabled by default, see [Timestamp feature] below.
-//!
-//! [logfmt]: https://www.brandur.org/logfmt
-//! [gcloud]: https://cloud.google.com/logging/docs/structured-logging
+//! [target="panic"]: PANIC_TARGET
 //!
 //!
 //! # Crate features
