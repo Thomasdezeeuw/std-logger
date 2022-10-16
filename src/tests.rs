@@ -6,7 +6,6 @@ use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 use std::{env, fmt, panic, str};
 
-use lazy_static::lazy_static;
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level, NoKvs};
@@ -16,10 +15,8 @@ use crate::{init, request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
     ( $(fn $name: ident () $body: block)+ ) => {
-        lazy_static! {
-            /// A global lock for testing sequentially.
-            static ref SEQUENTIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
-        }
+        /// A global lock for testing sequentially.
+        static SEQUENTIAL_TEST_MUTEX: Mutex<()> = Mutex::new(());
 
         $(
         #[test]
@@ -90,13 +87,13 @@ sequential_tests! {
         env::remove_var("LOG_LEVEL");
 
         let want = &[
-            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
-            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
-            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:107\"\n",
-            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:108\"\n",
-            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:109\"\n",
-            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:110\"\n",
-            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:111\"\n",
+            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
+            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
+            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
+            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
+            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
+            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:107\"\n",
+            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:108\"\n",
         ];
 
         #[cfg(feature = "timestamp")]
