@@ -10,7 +10,7 @@ use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level, NoKvs};
 use crate::format::{self, Format, Gcloud, LogFmt};
-use crate::{request, Targets, BUFS_SIZE, LOG_OUTPUT, REQUEST_TARGET};
+use crate::{request, Targets, BUFS_SIZE, LOG_OUTPUT, PANIC_TARGET, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -175,7 +175,7 @@ fn targets_should_log() {
         // Requests should always be logged.
         (REQUEST_TARGET, vec![true, true, true, true]),
         // Panics should always be logged.
-        ("panic", vec![true, true, true, true]),
+        (PANIC_TARGET, vec![true, true, true, true]),
     ];
 
     for (test_target, wanted) in tests {
