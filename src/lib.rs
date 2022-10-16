@@ -193,8 +193,7 @@
 //! Enabling this feature enables the crate to use unstable (i.e. nightly-only)
 //! features from the compiler and standard library.
 //!
-//! Currently this is limited to using the [`std::backtrace`] for creating
-//! backtraces, rather than an external library.
+//! Currently this enables nothing.
 //!
 //!
 //! # Examples
@@ -239,7 +238,6 @@
 //! [Timestamp feature]: #timestamp-feature
 
 #![warn(missing_debug_implementations, missing_docs, unused_results)]
-#![cfg_attr(all(feature = "log-panic", feature = "nightly"), feature(backtrace))]
 
 use std::cell::RefCell;
 use std::io::{self, IoSlice, Write};

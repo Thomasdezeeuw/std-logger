@@ -92,9 +92,6 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 #[inline]
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
-    #[cfg(not(feature = "nightly"))]
-    write!(buf.buf, "{args}").unwrap_or_else(|_| unreachable!());
-    #[cfg(feature = "nightly")]
     if let Some(msg) = args.as_str() {
         buf.buf.extend_from_slice(msg.as_bytes());
     } else {
