@@ -40,11 +40,9 @@ fn logger_middleware(request: Request) -> Response {
     // Log the request using the special request target. This will log it to
     // standard out rather then standard error.
     request!(
-        "url = `{}`, method = `{}`, status_code = {}, body_size = {}",
-        url,
-        method,
+        "url = `{url}`, method = `{method}`, status_code = {}, body_size = {}",
         response.status_code,
-        response.body.len()
+        response.body.len(),
     );
 
     if response.status_code == 404 {

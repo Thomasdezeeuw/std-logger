@@ -154,17 +154,10 @@ fn add_timestamp(message: String, timestamp: SystemTime, got: &str) -> String {
     };
 
     // Add the timestamp to the expected string.
-    let timestamp = format!(
-        "ts=\"{:004}-{:02}-{:02}T{:02}:{:02}:{:02}.{}Z\"",
-        year,
-        month,
-        day,
-        hour,
-        min,
-        sec,
-        &got[24..30] // We can never match the microseconds, so we just copy them.
-    );
-    format!("{} {}", timestamp, message)
+    let micros = &got[24..30]; // We can never match the microseconds, so we just copy them.
+    let timestamp =
+        format!("ts=\"{year:004}-{month:02}-{day:02}T{hour:02}:{min:02}:{sec:02}.{micros}Z\"");
+    format!("{timestamp} {message}")
 }
 
 #[test]
@@ -193,9 +186,7 @@ fn targets_should_log() {
             assert_eq!(
                 target.should_log(test_target),
                 want,
-                "targets to log: {:?}, logging target: {}",
-                target,
-                test_target
+                "targets to log: {target:?}, logging target: {test_target}",
             )
         }
     }

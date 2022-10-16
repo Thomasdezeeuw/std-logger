@@ -430,7 +430,7 @@ fn log_failure(err: io::Error) {
     #[cfg(feature = "log-panic")]
     drop(std::panic::take_hook());
 
-    panic!("unexpected error logging message: {}", err)
+    panic!("unexpected error logging message: {err}")
 }
 
 // Functions to get standard out/error, which are stubbed in testing. Even
