@@ -10,6 +10,7 @@ use log::{kv, Record};
 #[cfg(feature = "timestamp")]
 use crate::format::format_timestamp;
 use crate::format::{Buffer, Format, BUFS_SIZE};
+use crate::PANIC_TARGET;
 
 /// Google Cloud Platform structured logging using JSON, following
 /// <https://cloud.google.com/logging/docs/structured-logging>.
@@ -40,7 +41,7 @@ impl Format for Gcloud {
         // Or without a timestamp, i.e. `{"severity":"INFO`.
         bufs[0] = IoSlice::new(timestamp(buf));
         bufs[1] = IoSlice::new(b"\"severity\":\"");
-        if record.level() == log::Level::Error && record.target() == "panic" {
+        if record.level() == log::Level::Error && record.target() == PANIC_TARGET {
             // If we're panicking we increase the severity to critical.
             bufs[2] = IoSlice::new(b"CRITICAL");
         } else {
