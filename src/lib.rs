@@ -448,12 +448,8 @@ mod test_instruments {
     use std::mem::replace;
     use std::sync::Mutex;
 
-    use lazy_static::lazy_static;
-
-    lazy_static! {
-        /// Global log output.
-        pub(crate) static ref LOG_OUTPUT: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
-    }
+    /// Global log output.
+    pub(crate) static LOG_OUTPUT: Mutex<Vec<Vec<u8>>> = Mutex::new(Vec::new());
 
     /// Simple wrapper around a `Vec<u8>` which adds itself to `LOG_OUTPUT` when
     /// dropped.
