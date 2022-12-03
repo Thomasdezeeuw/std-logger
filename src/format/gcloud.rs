@@ -110,7 +110,7 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 }
 
 #[inline]
-fn severity(level: log::Level) -> &'static [u8] {
+const fn severity(level: log::Level) -> &'static [u8] {
     // NOTE: gcloud doesn't have trace messages so we use debug twice.
     const SEVERITIES: [&[u8]; 6] = [b"OFF", b"ERROR", b"WARNING", b"INFO", b"DEBUG", b"DEBUG"];
     SEVERITIES[level as usize]
@@ -307,7 +307,7 @@ impl<'b> fmt::Write for JsonBuf<'b> {
 }
 
 #[inline]
-fn hex(c: u8) -> [u8; 2] {
+const fn hex(c: u8) -> [u8; 2] {
     const HEX: [u8; 16] = *b"0123456789abcdef";
     [HEX[(c >> 4) as usize], HEX[(c & 0b1111) as usize]]
 }
