@@ -17,8 +17,8 @@ jobs:
     - name: Cargo version
       run: cargo -Vv
     - name: Install Cargo Hack
-      run: cargo install cargo-hack
-    - name: Run tests
+      run: cargo install --debug cargo-hack
+    - name: Tests
       run: cargo hack test --workspace --feature-powerset
   Clippy:
     runs-on: ubuntu-latest
