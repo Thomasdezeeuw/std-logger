@@ -44,3 +44,9 @@ jobs:
       run: cargo -Vv
     - name: Check formatting
       run: cargo fmt --all -- --check
+  Docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check docs
+      run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
