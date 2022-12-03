@@ -68,17 +68,17 @@ fn format_timestamp(buf: &mut [u8]) {
     let mut itoa = itoa::Buffer::new();
     buf[0..4].copy_from_slice(itoa.format(timestamp.year).as_bytes());
     buf[4] = b'-';
-    zero_pad2(&mut buf[5..7], itoa.format(timestamp.month).as_bytes());
+    zero_pad2(&mut buf[5..], itoa.format(timestamp.month).as_bytes());
     buf[7] = b'-';
-    zero_pad2(&mut buf[8..10], itoa.format(timestamp.day).as_bytes());
+    zero_pad2(&mut buf[8..], itoa.format(timestamp.day).as_bytes());
     buf[10] = b'T';
-    zero_pad2(&mut buf[11..13], itoa.format(timestamp.hour).as_bytes());
+    zero_pad2(&mut buf[11..], itoa.format(timestamp.hour).as_bytes());
     buf[13] = b':';
-    zero_pad2(&mut buf[14..16], itoa.format(timestamp.min).as_bytes());
+    zero_pad2(&mut buf[14..], itoa.format(timestamp.min).as_bytes());
     buf[16] = b':';
-    zero_pad2(&mut buf[17..19], itoa.format(timestamp.sec).as_bytes());
+    zero_pad2(&mut buf[17..], itoa.format(timestamp.sec).as_bytes());
     buf[19] = b'.';
-    zero_pad6(&mut buf[20..26], itoa.format(timestamp.micro).as_bytes());
+    zero_pad6(&mut buf[20..], itoa.format(timestamp.micro).as_bytes());
     buf[26] = b'Z';
 }
 
@@ -86,7 +86,6 @@ fn format_timestamp(buf: &mut [u8]) {
 #[cfg(feature = "timestamp")]
 fn zero_pad2(buf: &mut [u8], v: &[u8]) {
     let _ = buf[1];
-    debug_assert_eq!(buf.len(), 2);
     if v.len() == 1 {
         buf[0] = b'0';
         buf[1] = v[0];
@@ -100,10 +99,9 @@ fn zero_pad2(buf: &mut [u8], v: &[u8]) {
 #[cfg(feature = "timestamp")]
 fn zero_pad6(buf: &mut [u8], v: &[u8]) {
     let _ = buf[5];
-    debug_assert_eq!(buf.len(), 6);
     let start = 6 - v.len();
-    for b in buf.iter_mut().take(start) {
-        *b = b'0';
+    for i in 0..start {
+        buf[i] = b'0';
     }
     buf[start..6].copy_from_slice(v);
 }
