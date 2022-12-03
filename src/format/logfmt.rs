@@ -1,8 +1,7 @@
 //! Logfmt following <https://www.brandur.org/logfmt>.
 
-use std::fmt;
+use std::fmt::{self, Write};
 use std::io::IoSlice;
-use std::io::Write;
 
 use log::kv::value::Visit;
 use log::{kv, Record};
@@ -93,9 +92,9 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        buf.buf.extend_from_slice(msg.as_bytes());
+        LogFmtBuf(&mut buf.buf).extend_from_slice(msg.as_bytes());
     } else {
-        write!(buf.buf, "{args}").unwrap_or_else(|_| unreachable!());
+        write!(LogFmtBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }
@@ -142,7 +141,7 @@ struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
 impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
         self.0.push(b' ');
-        self.0.extend_from_slice(key.as_str().as_bytes());
+        LogFmtBuf(self.0).extend_from_slice(key.as_str().as_bytes());
         self.0.push(b'=');
         value.visit(self)
     }
@@ -151,7 +150,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
 impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        write!(self.0, "{value}").unwrap_or_else(|_| unreachable!());
+        write!(LogFmtBuf(self.0), "{value}").unwrap_or_else(|_| unreachable!());
         self.0.push(b'\"');
         Ok(())
     }
@@ -194,8 +193,37 @@ impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
 
     fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        self.0.extend_from_slice(value.as_bytes());
+        LogFmtBuf(self.0).extend_from_slice(value.as_bytes());
         self.0.push(b'\"');
+        Ok(())
+    }
+}
+
+/// [`fmt::Write`] implementation that writes escaped quotes.
+struct LogFmtBuf<'b>(&'b mut Vec<u8>);
+
+impl<'b> LogFmtBuf<'b> {
+    fn extend_from_slice(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            if b == b'"' {
+                self.0.push(b'\\');
+            }
+            self.0.push(b);
+        }
+    }
+}
+
+impl<'b> fmt::Write for LogFmtBuf<'b> {
+    #[inline]
+    fn write_str(&mut self, string: &str) -> fmt::Result {
+        self.extend_from_slice(string.as_bytes());
+        Ok(())
+    }
+
+    #[inline]
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.0
+            .extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes());
         Ok(())
     }
 }
