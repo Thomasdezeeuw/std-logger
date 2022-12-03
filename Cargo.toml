@@ -12,7 +12,7 @@ license       = "MIT/Apache-2.0"
 documentation = "https://docs.rs/std-logger"
 repository    = "https://github.com/Thomasdezeeuw/std-logger"
 readme        = "README.md"
-keywords      = ["logging", "log", "logfmt", "standard"]
+keywords      = ["logging", "log", "standard", "logfmt", "gcloud"]
 categories    = ["development-tools::debugging"]
 include       = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2021"
@@ -21,7 +21,7 @@ edition       = "2021"
 default   = ["timestamp", "log-panic"]
 log-panic = []
 timestamp = []
-nightly  = []
+nightly   = []
 
 [dependencies]
 log        = { version = "0.4.16", default-features = false, features = ["kv_unstable_std"] }
