@@ -18,6 +18,7 @@ use crate::{Logger, Targets};
 #[derive(Debug)]
 pub struct Config<F, Kvs> {
     filter: LevelFilter,
+    add_loc: Option<bool>,
     targets: Targets,
     kvs: Kvs,
     _format: PhantomData<F>,
@@ -44,6 +45,7 @@ where
     fn new(kvs: Kvs) -> Config<F, Kvs> {
         Config {
             filter: get_max_level(),
+            add_loc: None,
             targets: get_log_targets(),
             kvs,
             _format: PhantomData,
@@ -57,8 +59,22 @@ where
     {
         Config {
             filter: self.filter,
+            add_loc: self.add_loc,
             targets: self.targets,
             kvs,
+            _format: self._format,
+        }
+    }
+
+    /// Enable or disable logging of the call location.
+    ///
+    /// Default to enable if the debug (or lower) messages are enabled.
+    pub fn with_call_location(self, enable: bool) -> Config<F, Kvs> {
+        Config {
+            filter: self.filter,
+            add_loc: Some(enable),
+            targets: self.targets,
+            kvs: self.kvs,
             _format: self._format,
         }
     }
@@ -88,6 +104,7 @@ where
     pub fn try_init(self) -> Result<(), SetLoggerError> {
         let logger = Box::new(Logger {
             filter: self.filter,
+            add_loc: self.add_loc.unwrap_or(self.filter >= LevelFilter::Debug),
             targets: self.targets,
             kvs: self.kvs,
             _format: self._format,

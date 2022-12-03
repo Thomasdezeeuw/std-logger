@@ -317,6 +317,8 @@ pub use log as _log;
 struct Logger<F, Kvs> {
     /// The filter used to determine what messages to log.
     filter: LevelFilter,
+    /// `add_loc` argument to `Format::format`.
+    add_loc: bool,
     /// What logging targets to log.
     targets: Targets,
     /// Key-values supplied for all logs.
@@ -364,7 +366,7 @@ where
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            log::<F, Kvs>(record, &self.kvs, self.filter >= LevelFilter::Debug);
+            log::<F, Kvs>(record, &self.kvs, self.add_loc);
         }
     }
 
@@ -374,7 +376,7 @@ where
 }
 
 /// The actual logging of a record.
-fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, debug: bool) {
+fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
     thread_local! {
@@ -386,7 +388,7 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, debug: bool) {
         match buf.try_borrow_mut() {
             Ok(mut buf) => {
                 // NOTE: keep in sync with the `Err` branch below.
-                let bufs = F::format(&mut bufs, &mut buf, record, kvs, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, kvs, add_loc);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
@@ -401,7 +403,7 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, debug: bool) {
                 // borrowing `BUF`.
                 let mut buf = Buffer::new();
                 // NOTE: keep in sync with the `Ok` branch above.
-                let bufs = F::format(&mut bufs, &mut buf, record, kvs, debug);
+                let bufs = F::format(&mut bufs, &mut buf, record, kvs, add_loc);
                 match record.target() {
                     REQUEST_TARGET => write_once(stdout(), bufs),
                     _ => write_once(stderr(), bufs),
