@@ -46,7 +46,7 @@ impl Buffer {
     /// Create a new format `Buffer`.
     pub(crate) fn new() -> Buffer {
         Buffer {
-            buf: vec![0; 1024],
+            buf: vec![0; 2048],
             indices: [0; N_INDICES],
         }
     }
