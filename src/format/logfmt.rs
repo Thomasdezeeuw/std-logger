@@ -21,14 +21,14 @@ impl Format for LogFmt {
         buf: &'b mut Buffer,
         record: &'b Record,
         kvs: &Kvs,
-        debug: bool,
+        add_loc: bool,
     ) -> &'b [IoSlice<'b>] {
         // Write all parts of the buffer that need formatting.
         #[cfg(feature = "timestamp")]
         write_timestamp(buf);
         write_msg(buf, record.args());
         write_key_values(buf, record.key_values(), kvs);
-        if debug {
+        if add_loc {
             write_line(buf, record.line().unwrap_or(0));
         }
 
@@ -51,7 +51,7 @@ impl Format for LogFmt {
         // Any key value pairs supplied by the user.
         bufs[9] = IoSlice::new(key_values(buf));
         // Optional file, e.g. ` file="some_file:123"`, and a line end.
-        let n = if debug {
+        let n = if add_loc {
             bufs[10] = IoSlice::new(b" file=\"");
             bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
             bufs[12] = IoSlice::new(line(buf));

@@ -16,13 +16,13 @@ pub trait Format {
     /// it resets itself. The returned slices is based on `bufs`, which is used
     /// to order the writable buffers.
     ///
-    /// If `debug` is `true` the file and line are added.
+    /// If `add_loc` is `true` the file and line are added.
     fn format<'b, Kvs: kv::Source>(
         bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
         buf: &'b mut Buffer,
         record: &'b Record,
         kvs: &Kvs,
-        debug: bool,
+        add_loc: bool,
     ) -> &'b [IoSlice<'b>];
 }
 

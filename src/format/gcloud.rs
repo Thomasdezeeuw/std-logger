@@ -23,7 +23,7 @@ impl Format for Gcloud {
         buf: &'b mut Buffer,
         record: &'b Record,
         kvs: &Kvs,
-        debug: bool,
+        add_loc: bool,
     ) -> &'b [IoSlice<'b>] {
         // Write all parts of the buffer that need formatting.
         buf.buf[0] = b'{';
@@ -31,7 +31,7 @@ impl Format for Gcloud {
         write_timestamp(buf);
         write_msg(buf, record.args());
         write_key_values(buf, record.key_values(), kvs);
-        if debug {
+        if add_loc {
             write_line(buf, record.line().unwrap_or(0));
         }
 
@@ -61,7 +61,7 @@ impl Format for Gcloud {
         // Optional file, e.g.
         // `","sourceLocation":{"file":"some_file.rs","line":"123"}}`, and a line
         // end.
-        let n = if debug {
+        let n = if add_loc {
             bufs[10] = IoSlice::new(b",\"sourceLocation\":{\"file\":\"");
             bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
             bufs[12] = IoSlice::new(b"\",\"line\":\"");
