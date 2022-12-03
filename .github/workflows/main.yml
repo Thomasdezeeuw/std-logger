@@ -12,10 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Install nightly compiler
-      run: rustup toolchain install nightly
-    - name: Set default to nightly compiler
-      run: rustup default nightly
     - name: Rustc version
       run: rustc -Vv
     - name: Cargo version
@@ -28,10 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Install nightly compiler
-      run: rustup toolchain install nightly
-    - name: Set default to nightly compiler
-      run: rustup default nightly
     - name: Add Clippy
       run: rustup component add clippy
     - name: Rustc version
