@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.5
+
+* **BREAKING** Increased MSRV to 1.65.
+* **BREAKING** Removes global `init` and `try_init` functions, `Config` should be used
+  instead
+  (https://github.com/Thomasdezeeuw/std-logger/commit/7b540ff76356a2e9acdb3752a4005aed5a02f293).
+* Switch to Rust edition 2021
+  (https://github.com/Thomasdezeeuw/std-logger/commit/3eb06c76fb69c1d5316e1a8943d8868fd0a76461).
+* Dropped the `log-panics` dependency, using `std::backtrace` instead
+  (https://github.com/Thomasdezeeuw/std-logger/commit/6752d511d5b28b8794fd859f505f693283e5a765).
+* Add `Config::with_call_location`, enables or disables logging of the call
+  location
+  (https://github.com/Thomasdezeeuw/std-logger/commit/86bbd1da4d200f32680d6aa8155266a585d6475a).
+* Add column number to logged panics
+  (https://github.com/Thomasdezeeuw/std-logger/commit/8ea67c0162d55428538ab9cd3beffdb134ea1c0b).
+* Increases the initial buffer size to 2kb
+  (https://github.com/Thomasdezeeuw/std-logger/commit/809ca8b4087a898f735b8d1a906a1ed3f9fa1755).
+* Fixes logging of messages using quotes using logfmt formatting
+  (https://github.com/Thomasdezeeuw/std-logger/commit/d1b9e86ee6e91ac45d5fef9eae688ee813964945).
+* Use CRITICAL severity for panic when logging using gcloud
+  (https://github.com/Thomasdezeeuw/std-logger/commit/1671d9496706d3f077c1b59fb38211d293eb4386).
+
 ## v0.4.4
 
 * Fixes logging of messages using quotes using GCP (gcloud) formatting
