@@ -5,15 +5,16 @@ use std::marker::PhantomData;
 
 use log::{kv, LevelFilter, SetLoggerError};
 
-use crate::format::{Format, Gcloud, LogFmt};
+use crate::format::{Format, Gcloud, Json, LogFmt};
 #[cfg(feature = "log-panic")]
 use crate::PANIC_TARGET;
 use crate::{Logger, Targets};
 
 /// Configuration of the logger.
 ///
-/// It support two logging formats:
+/// It support three logging formats:
 ///  * [`logfmt`](Config::logfmt) and
+///  * [`json`](Config::json) and
 ///  * [`gcloud`](Config::gcloud).
 #[derive(Debug)]
 pub struct Config<F, Kvs> {
@@ -27,6 +28,11 @@ pub struct Config<F, Kvs> {
 impl Config<(), NoKvs> {
     /// Logfmt following <https://www.brandur.org/logfmt>.
     pub fn logfmt() -> Config<LogFmt, NoKvs> {
+        Config::new(NoKvs)
+    }
+
+    /// Structured logging using JSON.
+    pub fn json() -> Config<Json, NoKvs> {
         Config::new(NoKvs)
     }
 
