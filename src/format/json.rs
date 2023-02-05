@@ -104,9 +104,9 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        JsonBuf(&mut buf.buf).extend_from_slice(msg.as_bytes());
+        Buf(&mut buf.buf).extend_from_slice(msg.as_bytes());
     } else {
-        write!(JsonBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
+        write!(Buf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }
@@ -144,15 +144,16 @@ fn line(buf: &Buffer) -> &[u8] {
     &buf.buf[buf.indices[1]..buf.indices[2]]
 }
 
-/// Formats key value pairs in the following format: `"key":"value"`. For
-/// example: `"user_name":"Thomas","user_id":123,"is_admin":true`.
+/// Formats key value pairs as a part of an JSON object, in the following
+/// format: `"key":"value"`. For example:
+/// `"user_name":"Thomas","user_id":123,"is_admin":true`.
 struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
 
 impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
         self.0.push(b',');
         self.0.push(b'"');
-        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), key.as_str());
+        let _ = fmt::Write::write_str(&mut Buf(self.0), key.as_str());
         self.0.push(b'"');
         self.0.push(b':');
         value.visit(self)
@@ -162,7 +163,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
 impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        let _ = fmt::Write::write_fmt(&mut JsonBuf(self.0), format_args!("{value}"));
+        let _ = fmt::Write::write_fmt(&mut Buf(self.0), format_args!("{value}"));
         self.0.push(b'\"');
         Ok(())
     }
@@ -205,16 +206,16 @@ impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
 
     fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), value);
+        let _ = fmt::Write::write_str(&mut Buf(self.0), value);
         self.0.push(b'\"');
         Ok(())
     }
 }
 
-/// [`fmt::Write`] implementation that writes escaped strings.
-struct JsonBuf<'b>(&'b mut Vec<u8>);
+/// [`fmt::Write`] implementation that writes escaped JSON strings.
+struct Buf<'b>(&'b mut Vec<u8>);
 
-impl<'b> JsonBuf<'b> {
+impl<'b> Buf<'b> {
     fn extend_from_slice(&mut self, bytes: &[u8]) {
         for b in bytes {
             self.write_char(*b as char)
@@ -223,7 +224,7 @@ impl<'b> JsonBuf<'b> {
     }
 }
 
-impl<'b> fmt::Write for JsonBuf<'b> {
+impl<'b> fmt::Write for Buf<'b> {
     #[inline]
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for c in string.chars() {
