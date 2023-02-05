@@ -96,7 +96,9 @@ fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
             .write_str(msg)
             .unwrap_or_else(|_| unreachable!());
     } else {
-        write!(LogFmtBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
+        LogFmtBuf(&mut buf.buf)
+            .write_fmt(*args)
+            .unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }

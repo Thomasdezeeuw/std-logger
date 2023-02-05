@@ -108,7 +108,9 @@ fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
             .write_str(msg)
             .unwrap_or_else(|_| unreachable!());
     } else {
-        write!(Buf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
+        Buf(&mut buf.buf)
+            .write_fmt(*args)
+            .unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }
