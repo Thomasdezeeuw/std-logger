@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.1
+
+* Added support for formatting using JSON
+  (https://github.com/Thomasdezeeuw/std-logger/commit/d6338f450351c5d4f0bfbd091c71c72dbc5d10ff).
+
 ## v0.5
 
 * **BREAKING** Increased MSRV to 1.65.
