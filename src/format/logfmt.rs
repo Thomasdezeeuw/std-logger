@@ -92,11 +92,11 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        LogFmtBuf(&mut buf.buf)
+        Buf(&mut buf.buf)
             .write_str(msg)
             .unwrap_or_else(|_| unreachable!());
     } else {
-        LogFmtBuf(&mut buf.buf)
+        Buf(&mut buf.buf)
             .write_fmt(*args)
             .unwrap_or_else(|_| unreachable!());
     }
@@ -145,7 +145,7 @@ struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
 impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
         self.0.push(b' ');
-        LogFmtBuf(self.0).extend_from_slice(key.as_str().as_bytes());
+        Buf(self.0).extend_from_slice(key.as_str().as_bytes());
         self.0.push(b'=');
         value.visit(self)
     }
@@ -154,7 +154,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
 impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        write!(LogFmtBuf(self.0), "{value}").unwrap_or_else(|_| unreachable!());
+        write!(Buf(self.0), "{value}").unwrap_or_else(|_| unreachable!());
         self.0.push(b'\"');
         Ok(())
     }
@@ -197,16 +197,16 @@ impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
 
     fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        LogFmtBuf(self.0).extend_from_slice(value.as_bytes());
+        Buf(self.0).extend_from_slice(value.as_bytes());
         self.0.push(b'\"');
         Ok(())
     }
 }
 
 /// [`fmt::Write`] implementation that writes escaped quotes.
-struct LogFmtBuf<'b>(&'b mut Vec<u8>);
+struct Buf<'b>(&'b mut Vec<u8>);
 
-impl<'b> LogFmtBuf<'b> {
+impl<'b> Buf<'b> {
     fn extend_from_slice(&mut self, bytes: &[u8]) {
         for &b in bytes {
             if b == b'"' {
@@ -217,7 +217,7 @@ impl<'b> LogFmtBuf<'b> {
     }
 }
 
-impl<'b> fmt::Write for LogFmtBuf<'b> {
+impl<'b> fmt::Write for Buf<'b> {
     #[inline]
     fn write_str(&mut self, string: &str) -> fmt::Result {
         self.extend_from_slice(string.as_bytes());
