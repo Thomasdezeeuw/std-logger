@@ -9,7 +9,7 @@ use std::{env, fmt, panic, str};
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level, NoKvs};
-use crate::format::{self, Format, Gcloud, LogFmt};
+use crate::format::{self, Format, Gcloud, Json, LogFmt};
 use crate::{request, Targets, BUFS_SIZE, LOG_OUTPUT, PANIC_TARGET, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
@@ -243,6 +243,66 @@ fn format_logfmt() {
         #[cfg(feature = "timestamp")]
         {
             want = add_timestamp(want, SystemTime::now(), &got)
+        }
+
+        assert_eq!(got, *want);
+    }
+}
+
+#[test]
+fn format_json() {
+    let record1 = Record::builder()
+        .args(format_args!("some arguments1"))
+        .level(Level::Info)
+        .target("some_target1")
+        .module_path_static(Some("module_path1"))
+        .file_static(Some("file1"))
+        .line(Some(123))
+        .key_values(&("key1", "value1"))
+        .build();
+    let kvs = &[
+        ("key2a", (&"value2") as &dyn kv::ToValue),
+        ("key2b", &123u64),
+        ("key3c", &-123i64),
+        ("key3d", &123.0f64),
+        ("key2e", &true),
+        ("key2f", &false),
+        ("key2g", &'c'),
+        ("key2\"g", &(&MyDisplay as &dyn fmt::Display)),
+    ];
+    let kvs: &[(&str, &dyn kv::ToValue)] = kvs.deref();
+    let kvs: &dyn kv::Source = &kvs;
+    let record2 = Record::builder()
+        .args(format_args!("arguments2 with \"quotes\""))
+        .level(Level::Warn)
+        .target("second_target")
+        .module_path_static(Some("module_path1"))
+        .file_static(Some("file2"))
+        .line(Some(111))
+        .key_values(kvs)
+        .build();
+    let record3 = Record::builder()
+        .args(format_args!("panicking!"))
+        .level(Level::Error)
+        .target("panic")
+        .build();
+
+    let tests = &[
+        (record1.clone(), true, "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n"),
+        (record1, false, "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n"),
+        (record2, true, "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"file\":\"file2\",\"line\":\"111\"}\n"),
+        (record3, true, "{\"level\":\"ERROR\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"file\":\"??\",\"line\":\"0\"}\n"),
+    ];
+
+    for (record, debug, want) in tests {
+        let got = format_record::<Json>(record, *debug);
+        #[allow(unused_mut)]
+        let mut want = (*want).to_owned();
+        #[cfg(feature = "timestamp")]
+        {
+            let timestamp = add_timestamp(String::new(), SystemTime::now(), &got[10..]);
+            let timestamp = format!("\"timestamp\":\"{}\",", &timestamp[4..timestamp.len() - 2]);
+            want.insert_str(1, &timestamp);
         }
 
         assert_eq!(got, *want);

@@ -2,11 +2,14 @@ use std::io::IoSlice;
 
 use log::{kv, Record};
 
-pub(crate) mod gcloud;
-pub(crate) use gcloud::Gcloud;
-
 pub(crate) mod logfmt;
 pub(crate) use logfmt::LogFmt;
+
+pub(crate) mod json;
+pub(crate) use json::Json;
+
+pub(crate) mod gcloud;
+pub(crate) use gcloud::Gcloud;
 
 /// Trait that defines how to format a [`log::Record`].
 pub trait Format {

@@ -3,7 +3,7 @@ name          = "std-logger"
 description   = """
 A logging implementation for the log crate that logs messages to standard error
 and requests to standard out. It support a number of output formats including
-JSON (gcloud) and logfmt.
+JSON, JSON for GCP (gcloud) and logfmt.
 """
 version       = "0.5.0"
 authors       = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
@@ -11,7 +11,7 @@ license       = "MIT/Apache-2.0"
 documentation = "https://docs.rs/std-logger"
 repository    = "https://github.com/Thomasdezeeuw/std-logger"
 readme        = "README.md"
-keywords      = ["logging", "log", "standard", "logfmt", "gcloud"]
+keywords      = ["logging", "log", "standard", "logfmt", "json", "gcloud"]
 categories    = ["development-tools::debugging"]
 include       = ["Cargo.toml", "src/**/*.rs", "README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 edition       = "2021"
