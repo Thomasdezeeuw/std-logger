@@ -270,8 +270,12 @@
 //! /// request.
 //! fn log_handler(req: Request) {
 //!     // This will be logged to standard out, rather then standard error.
-//!     request!("url = {}, status = {}, response_time = {:?}",
-//!         req.url, req.status, req.response_time);
+//!     request!(
+//!         url = log::as_display!(req.url),
+//!         status = log::as_display!(req.status),
+//!         response_time = log::as_debug!(req.response_time);
+//!         "HTTP request"
+//!     );
 //! }
 //! ```
 //!
