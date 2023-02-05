@@ -2,7 +2,6 @@ use std::io::{IoSlice, Write};
 use std::mem::take;
 use std::ops::Deref;
 use std::sync::Mutex;
-#[cfg(feature = "timestamp")]
 use std::time::{Duration, SystemTime};
 use std::{env, fmt, panic, str};
 
@@ -87,13 +86,13 @@ sequential_tests! {
         env::remove_var("LOG_LEVEL");
 
         let want = &[
-            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
-            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
-            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
-            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
-            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
-            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:107\"\n",
-            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:108\"\n",
+            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:101\"\n",
+            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
+            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
+            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
+            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
+            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
+            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:107\"\n",
         ];
 
         #[cfg(feature = "timestamp")]
@@ -288,6 +287,8 @@ where
         let want = add_timestamp(want.to_string(), SystemTime::now(), &got);
         assert_eq!(got, *want);
     }
+    #[cfg(not(feature = "timestamp"))]
+    let _ = add_timestamp;
 }
 
 fn format_record<F: Format>(record: &Record, debug: bool) -> String {
