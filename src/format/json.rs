@@ -167,7 +167,9 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
 impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        let _ = fmt::Write::write_fmt(&mut Buf(self.0), format_args!("{value}"));
+        Buf(self.0)
+            .write_fmt(format_args!("{value}"))
+            .unwrap_or_else(|_| unreachable!());
         self.0.push(b'\"');
         Ok(())
     }
