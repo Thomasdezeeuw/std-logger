@@ -1,5 +1,5 @@
 use std::io::{IoSlice, Write};
-use std::mem::replace;
+use std::mem::take;
 use std::ops::Deref;
 use std::sync::Mutex;
 #[cfg(feature = "timestamp")]
@@ -109,10 +109,10 @@ sequential_tests! {
 
         // Make sure the panics aren't logged.
         let _ = std::panic::take_hook();
-        let got = replace(&mut *(LOG_OUTPUT.lock().unwrap()), Vec::new());
+        let got = take(&mut *(LOG_OUTPUT.lock().unwrap()));
 
         let mut got_length = 0;
-        for (want, got) in want.into_iter().zip(got.into_iter()) {
+        for (want, got) in want.iter().zip(got.into_iter()) {
             let got = str::from_utf8(&got).expect("unable to parse string");
 
             #[allow(unused_mut)]
@@ -358,6 +358,6 @@ fn timestamp() {
         assert_eq!(got.hour as i32, hour);
         assert_eq!(got.min as i32, min);
         assert_eq!(got.sec as i32, sec);
-        assert_eq!(got.micro as u32, micros);
+        assert_eq!(got.micro, micros);
     }
 }

@@ -462,7 +462,7 @@ use std::io::{stderr, stdout};
 #[cfg(test)]
 mod test_instruments {
     use std::io::{self, IoSlice, Write};
-    use std::mem::replace;
+    use std::mem::take;
     use std::sync::Mutex;
 
     /// Global log output.
@@ -490,7 +490,7 @@ mod test_instruments {
 
     impl Drop for LogOutput {
         fn drop(&mut self) {
-            let buf = replace(&mut self.inner, Vec::new());
+            let buf = take(&mut self.inner);
             LOG_OUTPUT.lock().unwrap().push(buf);
         }
     }
