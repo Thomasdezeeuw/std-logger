@@ -5,15 +5,9 @@ authors       = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
 edition       = "2018"
 
 [dependencies]
-chrono      = "0.4.19"
 criterion   = "0.3.4"
 libc        = "0.2.86"
 log         = "0.4.14"
-
-[[bench]]
-name = "time_format"
-path = "time_format.rs"
-harness = false
 
 [[bench]]
 name = "standard_out"
