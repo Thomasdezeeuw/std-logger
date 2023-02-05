@@ -92,7 +92,9 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        LogFmtBuf(&mut buf.buf).extend_from_slice(msg.as_bytes());
+        LogFmtBuf(&mut buf.buf)
+            .write_str(msg)
+            .unwrap_or_else(|_| unreachable!());
     } else {
         write!(LogFmtBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
     }
