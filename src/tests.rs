@@ -128,7 +128,6 @@ sequential_tests! {
     }
 }
 
-#[cfg(feature = "timestamp")]
 fn add_timestamp(message: String, timestamp: SystemTime, got: &str) -> String {
     use std::mem::MaybeUninit;
 
@@ -199,118 +198,47 @@ impl fmt::Display for MyDisplay {
 
 #[test]
 fn format_logfmt() {
-    let record1 = Record::builder()
-        .args(format_args!("some arguments1"))
-        .level(Level::Info)
-        .target("some_target1")
-        .module_path_static(Some("module_path1"))
-        .file_static(Some("file1"))
-        .line(Some(123))
-        .key_values(&("key1", "value1"))
-        .build();
-    let kvs = &[
-        ("key2a", (&"value2") as &dyn kv::ToValue),
-        ("key2b", &123u64),
-        ("key3c", &-123i64),
-        ("key3d", &123.0f64),
-        ("key2e", &true),
-        ("key2f", &false),
-        ("key2g", &'c'),
-        ("key2g", &(&MyDisplay as &dyn fmt::Display)),
-    ];
-    let kvs: &[(&str, &dyn kv::ToValue)] = kvs.deref();
-    let kvs: &dyn kv::Source = &kvs;
-    let record2 = Record::builder()
-        .args(format_args!("arguments2"))
-        .level(Level::Error)
-        .target("second_target")
-        .module_path_static(Some("module_path1"))
-        .file_static(Some("file2"))
-        .line(Some(111))
-        .key_values(kvs)
-        .build();
-
-    let tests = &[
-        (record1.clone(), true, "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n"),
-        (record1, false, "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n"),
-        (record2, true, "lvl=\"ERROR\" msg=\"arguments2\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2g=\"MyDisplay\" file=\"file2:111\"\n"),
-    ];
-
-    for (record, debug, want) in tests {
-        let got = format_record::<LogFmt>(record, *debug);
-        #[allow(unused_mut)]
-        let mut want = (*want).to_owned();
-        #[cfg(feature = "timestamp")]
-        {
-            want = add_timestamp(want, SystemTime::now(), &got)
-        }
-
-        assert_eq!(got, *want);
-    }
+    format_test::<LogFmt, _>(&[
+        "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n",
+        "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n",
+        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" file=\"file2:111\"\n",
+        "lvl=\"ERROR\" msg=\"panicking!\" target=\"panic\" module=\"\" file=\"??:0\"\n",
+    ], add_timestamp);
 }
 
 #[test]
 fn format_json() {
-    let record1 = Record::builder()
-        .args(format_args!("some arguments1"))
-        .level(Level::Info)
-        .target("some_target1")
-        .module_path_static(Some("module_path1"))
-        .file_static(Some("file1"))
-        .line(Some(123))
-        .key_values(&("key1", "value1"))
-        .build();
-    let kvs = &[
-        ("key2a", (&"value2") as &dyn kv::ToValue),
-        ("key2b", &123u64),
-        ("key3c", &-123i64),
-        ("key3d", &123.0f64),
-        ("key2e", &true),
-        ("key2f", &false),
-        ("key2g", &'c'),
-        ("key2\"g", &(&MyDisplay as &dyn fmt::Display)),
-    ];
-    let kvs: &[(&str, &dyn kv::ToValue)] = kvs.deref();
-    let kvs: &dyn kv::Source = &kvs;
-    let record2 = Record::builder()
-        .args(format_args!("arguments2 with \"quotes\""))
-        .level(Level::Warn)
-        .target("second_target")
-        .module_path_static(Some("module_path1"))
-        .file_static(Some("file2"))
-        .line(Some(111))
-        .key_values(kvs)
-        .build();
-    let record3 = Record::builder()
-        .args(format_args!("panicking!"))
-        .level(Level::Error)
-        .target("panic")
-        .build();
-
-    let tests = &[
-        (record1.clone(), true, "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n"),
-        (record1, false, "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n"),
-        (record2, true, "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"file\":\"file2\",\"line\":\"111\"}\n"),
-        (record3, true, "{\"level\":\"ERROR\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"file\":\"??\",\"line\":\"0\"}\n"),
-    ];
-
-    for (record, debug, want) in tests {
-        let got = format_record::<Json>(record, *debug);
-        #[allow(unused_mut)]
-        let mut want = (*want).to_owned();
-        #[cfg(feature = "timestamp")]
-        {
-            let timestamp = add_timestamp(String::new(), SystemTime::now(), &got[10..]);
-            let timestamp = format!("\"timestamp\":\"{}\",", &timestamp[4..timestamp.len() - 2]);
-            want.insert_str(1, &timestamp);
-        }
-
-        assert_eq!(got, *want);
-    }
+    format_test::<Json, _>(&[
+        "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n",
+        "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"file\":\"file2\",\"line\":\"111\"}\n",
+        "{\"level\":\"ERROR\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"file\":\"??\",\"line\":\"0\"}\n",
+    ], add_timestamp_json);
 }
 
 #[test]
 fn format_gcloud() {
+    format_test::<Gcloud, _>(&[
+        "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n",
+        "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n",
+        "{\"severity\":\"CRITICAL\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"sourceLocation\":{\"file\":\"??\",\"line\":\"0\"}}\n",
+    ], add_timestamp_json);
+}
+
+fn add_timestamp_json(want: String, timestamp: SystemTime, got: &str) -> String {
+    let mut want = want.to_owned();
+    let timestamp = add_timestamp(String::new(), timestamp, &got[10..]);
+    let timestamp = format!("\"timestamp\":\"{}\",", &timestamp[4..timestamp.len() - 2]);
+    want.insert_str(1, &timestamp);
+    want
+}
+
+fn format_test<F, A>(expected: &[&str; 4], add_timestamp: A)
+where
+    F: Format,
+    A: Fn(String, SystemTime, &str) -> String,
+{
     let record1 = Record::builder()
         .args(format_args!("some arguments1"))
         .level(Level::Info)
@@ -348,23 +276,16 @@ fn format_gcloud() {
         .build();
 
     let tests = &[
-        (record1.clone(), true, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n"),
-        (record1, false, "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n"),
-        (record2, true, "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n"),
-        (record3, true, "{\"severity\":\"CRITICAL\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"sourceLocation\":{\"file\":\"??\",\"line\":\"0\"}}\n"),
+        (record1.clone(), true),
+        (record1, false),
+        (record2, true),
+        (record3, true),
     ];
 
-    for (record, debug, want) in tests {
-        let got = format_record::<Gcloud>(record, *debug);
-        #[allow(unused_mut)]
-        let mut want = (*want).to_owned();
+    for ((record, debug), want) in tests.into_iter().zip(expected) {
+        let got = format_record::<F>(record, *debug);
         #[cfg(feature = "timestamp")]
-        {
-            let timestamp = add_timestamp(String::new(), SystemTime::now(), &got[10..]);
-            let timestamp = format!("\"timestamp\":\"{}\",", &timestamp[4..timestamp.len() - 2]);
-            want.insert_str(1, &timestamp);
-        }
-
+        let want = add_timestamp(want.to_string(), SystemTime::now(), &got);
         assert_eq!(got, *want);
     }
 }
