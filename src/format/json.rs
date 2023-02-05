@@ -104,7 +104,9 @@ fn timestamp(buf: &Buffer) -> &[u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        Buf(&mut buf.buf).extend_from_slice(msg.as_bytes());
+        Buf(&mut buf.buf)
+            .write_str(msg)
+            .unwrap_or_else(|_| unreachable!());
     } else {
         write!(Buf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
     }
@@ -147,7 +149,7 @@ fn line(buf: &Buffer) -> &[u8] {
 /// Formats key value pairs as a part of an JSON object, in the following
 /// format: `"key":"value"`. For example:
 /// `"user_name":"Thomas","user_id":123,"is_admin":true`.
-struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
+pub(super) struct KeyValueVisitor<'b>(pub(super) &'b mut Vec<u8>);
 
 impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
@@ -213,16 +215,7 @@ impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
 }
 
 /// [`fmt::Write`] implementation that writes escaped JSON strings.
-struct Buf<'b>(&'b mut Vec<u8>);
-
-impl<'b> Buf<'b> {
-    fn extend_from_slice(&mut self, bytes: &[u8]) {
-        for b in bytes {
-            self.write_char(*b as char)
-                .unwrap_or_else(|_| unreachable!());
-        }
-    }
-}
+pub(super) struct Buf<'b>(pub(super) &'b mut Vec<u8>);
 
 impl<'b> fmt::Write for Buf<'b> {
     #[inline]
