@@ -58,7 +58,7 @@ impl Format for Json {
             bufs[12] = IoSlice::new(b"\",\"line\":\"");
             bufs[13] = IoSlice::new(line(buf));
             bufs[14] = IoSlice::new(b"\"}\n");
-            15 // FIXME.
+            15
         } else {
             bufs[10] = IoSlice::new(b"}\n");
             11
@@ -230,56 +230,36 @@ impl<'b> fmt::Write for Buf<'b> {
     fn write_char(&mut self, c: char) -> fmt::Result {
         // See RFC 8259, section 7
         // <https://datatracker.ietf.org/doc/html/rfc8259#section-7>.
-        match c {
+        let mut bytes = [0; 8];
+        let bytes: &[u8] = match c {
             // Quotation mark.
-            '"' => {
-                self.0.push(b'\\');
-                self.0.push(b'"');
-            }
+            '"' => &[b'\\', b'"'],
             // Reverse solidus.
-            '\\' => {
-                self.0.push(b'\\');
-                self.0.push(b'\\');
-            }
+            '\\' => &[b'\\', b'\\'],
             // Backspace.
-            '\u{0008}' => {
-                self.0.push(b'\\');
-                self.0.push(b'b');
-            }
+            '\u{0008}' => &[b'\\', b'b'],
             // Form feed.
-            '\u{000C}' => {
-                self.0.push(b'\\');
-                self.0.push(b'f');
-            }
+            '\u{000C}' => &[b'\\', b'f'],
             // Line feed.
-            '\u{000A}' => {
-                self.0.push(b'\\');
-                self.0.push(b'n');
-            }
+            '\u{000A}' => &[b'\\', b'n'],
             // Carriage return.
-            '\u{000D}' => {
-                self.0.push(b'\\');
-                self.0.push(b'r');
-            }
+            '\u{000D}' => &[b'\\', b'r'],
             // Tab.
-            '\u{0009}' => {
-                self.0.push(b'\\');
-                self.0.push(b't');
-            }
+            '\u{0009}' => &[b'\\', b't'],
             // Control characters (U+0000 through U+001F).
             '\u{0000}'..='\u{001F}' => {
-                self.0.push(b'\\');
-                self.0.push(b'u');
-                self.0.push(b'0');
-                self.0.push(b'0');
+                bytes[0] = b'\\';
+                bytes[1] = b'u';
+                bytes[2] = b'0';
+                bytes[3] = b'0';
                 let [b1, b2] = hex(c as u8);
-                self.0.push(b1);
-                self.0.push(b2);
+                bytes[4] = b1;
+                bytes[5] = b2;
+                &bytes
             }
-            _ => self
-                .0
-                .extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes()),
-        }
+            _ => c.encode_utf8(&mut bytes).as_bytes(),
+        };
+        self.0.extend_from_slice(bytes);
         Ok(())
     }
 }
