@@ -4,11 +4,11 @@
 use std::fmt::{self, Write};
 use std::io::IoSlice;
 
-use log::kv::value::Visit;
 use log::{kv, Record};
 
 #[cfg(feature = "timestamp")]
 use crate::format::format_timestamp;
+use crate::format::json;
 use crate::format::{Buffer, Format, BUFS_SIZE};
 use crate::PANIC_TARGET;
 
@@ -120,9 +120,11 @@ const fn severity(level: log::Level) -> &'static [u8] {
 fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
-        JsonBuf(&mut buf.buf).extend_from_slice(msg.as_bytes());
+        json::Buf(&mut buf.buf)
+            .write_str(msg)
+            .unwrap_or_else(|_| unreachable!());
     } else {
-        write!(JsonBuf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
+        write!(json::Buf(&mut buf.buf), "{args}").unwrap_or_else(|_| unreachable!());
     }
     buf.indices[0] = buf.buf.len();
 }
@@ -137,7 +139,7 @@ fn write_key_values<Kvs: kv::Source>(buf: &mut Buffer, kvs1: &dyn kv::Source, kv
     buf.buf.extend_from_slice(b"\"");
     // TODO: see if we can add to the slice of `IoSlice` using the keys
     // and string values.
-    let mut visitor = KeyValueVisitor(&mut buf.buf);
+    let mut visitor = json::KeyValueVisitor(&mut buf.buf);
     kvs1.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
     kvs2.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
     buf.indices[1] = buf.buf.len();
@@ -158,156 +160,4 @@ fn write_line(buf: &mut Buffer, line: u32) {
 #[inline]
 fn line(buf: &Buffer) -> &[u8] {
     &buf.buf[buf.indices[1]..buf.indices[2]]
-}
-
-/// Formats key value pairs in the following format: `key="value"`. For example:
-/// `user_name="Thomas" user_id=123 is_admin=true`
-struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
-
-impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
-    fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
-        self.0.push(b',');
-        self.0.push(b'"');
-        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), key.as_str());
-        self.0.push(b'"');
-        self.0.push(b':');
-        value.visit(self)
-    }
-}
-
-impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
-    fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
-        self.0.push(b'\"');
-        let _ = fmt::Write::write_fmt(&mut JsonBuf(self.0), format_args!("{value}"));
-        self.0.push(b'\"');
-        Ok(())
-    }
-
-    fn visit_u64(&mut self, value: u64) -> Result<(), kv::Error> {
-        let mut itoa = itoa::Buffer::new();
-        self.0.extend_from_slice(itoa.format(value).as_bytes());
-        Ok(())
-    }
-
-    fn visit_i64(&mut self, value: i64) -> Result<(), kv::Error> {
-        let mut itoa = itoa::Buffer::new();
-        self.0.extend_from_slice(itoa.format(value).as_bytes());
-        Ok(())
-    }
-
-    fn visit_u128(&mut self, value: u128) -> Result<(), kv::Error> {
-        let mut itoa = itoa::Buffer::new();
-        self.0.extend_from_slice(itoa.format(value).as_bytes());
-        Ok(())
-    }
-
-    fn visit_i128(&mut self, value: i128) -> Result<(), kv::Error> {
-        let mut itoa = itoa::Buffer::new();
-        self.0.extend_from_slice(itoa.format(value).as_bytes());
-        Ok(())
-    }
-
-    fn visit_f64(&mut self, value: f64) -> Result<(), kv::Error> {
-        let mut ryu = ryu::Buffer::new();
-        self.0.extend_from_slice(ryu.format(value).as_bytes());
-        Ok(())
-    }
-
-    fn visit_bool(&mut self, value: bool) -> Result<(), kv::Error> {
-        self.0
-            .extend_from_slice(if value { b"true" } else { b"false" });
-        Ok(())
-    }
-
-    fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
-        self.0.push(b'\"');
-        let _ = fmt::Write::write_str(&mut JsonBuf(self.0), value);
-        self.0.push(b'\"');
-        Ok(())
-    }
-}
-
-/// [`fmt::Write`] implementation that writes escaped strings.
-struct JsonBuf<'b>(&'b mut Vec<u8>);
-
-impl<'b> JsonBuf<'b> {
-    fn extend_from_slice(&mut self, bytes: &[u8]) {
-        for b in bytes {
-            self.write_char(*b as char)
-                .unwrap_or_else(|_| unreachable!());
-        }
-    }
-}
-
-impl<'b> fmt::Write for JsonBuf<'b> {
-    #[inline]
-    fn write_str(&mut self, string: &str) -> fmt::Result {
-        for c in string.chars() {
-            let _ = self.write_char(c);
-        }
-        Ok(())
-    }
-
-    #[inline]
-    fn write_char(&mut self, c: char) -> fmt::Result {
-        // See RFC 8259, section 7
-        // <https://datatracker.ietf.org/doc/html/rfc8259#section-7>.
-        match c {
-            // Quotation mark.
-            '"' => {
-                self.0.push(b'\\');
-                self.0.push(b'"');
-            }
-            // Reverse solidus.
-            '\\' => {
-                self.0.push(b'\\');
-                self.0.push(b'\\');
-            }
-            // Backspace.
-            '\u{0008}' => {
-                self.0.push(b'\\');
-                self.0.push(b'b');
-            }
-            // Form feed.
-            '\u{000C}' => {
-                self.0.push(b'\\');
-                self.0.push(b'f');
-            }
-            // Line feed.
-            '\u{000A}' => {
-                self.0.push(b'\\');
-                self.0.push(b'n');
-            }
-            // Carriage return.
-            '\u{000D}' => {
-                self.0.push(b'\\');
-                self.0.push(b'r');
-            }
-            // Tab.
-            '\u{0009}' => {
-                self.0.push(b'\\');
-                self.0.push(b't');
-            }
-            // Control characters (U+0000 through U+001F).
-            '\u{0000}'..='\u{001F}' => {
-                self.0.push(b'\\');
-                self.0.push(b'u');
-                self.0.push(b'0');
-                self.0.push(b'0');
-                let [b1, b2] = hex(c as u8);
-                self.0.push(b1);
-                self.0.push(b2);
-            }
-            _ => self
-                .0
-                .extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes()),
-        }
-        Ok(())
-    }
-}
-
-#[inline]
-const fn hex(c: u8) -> [u8; 2] {
-    const HEX: [u8; 16] = *b"0123456789abcdef";
-    [HEX[(c >> 4) as usize], HEX[(c & 0b1111) as usize]]
 }
