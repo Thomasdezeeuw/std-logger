@@ -1,10 +1,12 @@
-use log;
-use std_logger::REQUEST_TARGET;
+use log::info;
+use std_logger::request;
 
 fn main() {
     // Initialize the logger.
     let kvs = ("hostname", "node01");
     std_logger::Config::logfmt().with_kvs(kvs).init();
+
+    info!(target: "some_target", single = "value"; "some message");
 
     // Fake the handling of a request.
     logger_middleware(Request {
@@ -27,43 +29,20 @@ struct Response {
 
 fn logger_middleware(request: Request) -> Response {
     // Clone the url and method. Note: don't actually do this in an HTTP this is
-    // rather wasteful to.
+    // rather wasteful.
     let url = request.url.clone();
     let method = request.method.clone();
 
     // Call our handler.
     let response = http_handler(request);
 
-    log::info!("Hello world");
-
-    let kvs: &[(&str, &dyn log::kv::ToValue)] = &[
-        ("url", &&*url), // `String` -> `&&str` -> `&dyn ToValue`.
-        ("method", &&*method),
-        ("status_code", &response.status_code),
-        ("body_size", &response.body.len()),
-    ];
-
-    let record = log::Record::builder()
-        .args(format_args!("got request"))
-        .level(log::Level::Info)
-        .target(REQUEST_TARGET)
-        .file(Some(file!()))
-        .line(Some(line!()))
-        .module_path(Some(module_path!()))
-        .key_values(&kvs)
-        .build();
-    log::logger().log(&record);
-
-    let record = log::Record::builder()
-        .args(format_args!("some message"))
-        .level(log::Level::Info)
-        .target("some_target")
-        .file(Some(file!()))
-        .line(Some(line!()))
-        .module_path(Some(module_path!()))
-        .key_values(&("single", "value"))
-        .build();
-    log::logger().log(&record);
+    request!(
+        url = url,
+        method = method,
+        status_code = response.status_code,
+        body_size = response.body.len();
+        "got request",
+    );
 
     response
 }
