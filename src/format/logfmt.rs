@@ -228,8 +228,7 @@ impl<'b> fmt::Write for Buf<'b> {
 
     #[inline]
     fn write_char(&mut self, c: char) -> fmt::Result {
-        self.0
-            .extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes());
+        self.extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes());
         Ok(())
     }
 }
