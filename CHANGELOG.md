@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.2
+
+* Fix writing of `"` without escaping it using logfmt in some cases
+  (https://github.com/Thomasdezeeuw/std-logger/commit/9b87a34667262c04e3a7af1cbf33654f468b62db).
+
 ## v0.5.1
 
 * Added support for formatting using JSON
