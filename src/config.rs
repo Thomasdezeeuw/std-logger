@@ -159,23 +159,32 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
     use std::backtrace::Backtrace;
     use std::thread;
 
+    let mut record = log::Record::builder();
     let thread = thread::current();
     let thread_name = thread.name().unwrap_or("unnamed");
-    let (file, line) = match info.location() {
-        Some(location) => (location.file(), location.line()),
-        None => ("<unknown>", 0),
-    };
     let backtrace = Backtrace::force_capture();
 
+    let key_values = [
+        ("backtrace", kv::Value::capture_display(&backtrace)),
+        ("thread_name", kv::Value::from(thread_name)),
+    ];
+    let key_values = key_values.as_slice();
+
+    let _ = record
+        .level(log::Level::Error)
+        .target(PANIC_TARGET)
+        .key_values(&key_values);
+
+    if let Some(location) = info.location() {
+        let _ = record
+            .file(Some(location.file()))
+            .line(Some(location.line()));
+    };
+
+    // Format for {info}: "panicked at '$message', $file:$line:$col".
     log::logger().log(
-        &log::Record::builder()
-            // Format for {info}: "panicked at '$message', $file:$line:$col".
+        &record
             .args(format_args!("thread '{thread_name}' {info}"))
-            .level(log::Level::Error)
-            .target(PANIC_TARGET)
-            .file(Some(file))
-            .line(Some(line))
-            .key_values(&("backtrace", &backtrace as &dyn std::fmt::Display))
             .build(),
     );
 }
