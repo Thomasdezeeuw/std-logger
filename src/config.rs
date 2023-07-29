@@ -17,6 +17,7 @@ use crate::{Logger, Targets};
 ///  * [`json`](Config::json) and
 ///  * [`gcloud`](Config::gcloud).
 #[derive(Debug)]
+#[must_use = "the logger must be initialised using `init` or `try_init`"]
 pub struct Config<F, Kvs> {
     filter: LevelFilter,
     add_loc: Option<bool>,
