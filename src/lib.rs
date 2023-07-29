@@ -397,6 +397,7 @@ where
 }
 
 /// The actual logging of a record.
+#[allow(clippy::single_match_else)]
 fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
@@ -436,7 +437,7 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
 }
 
 /// Write the entire `buf`fer into the `output` or return an error.
-#[inline(always)]
+#[inline]
 fn write_once<W>(mut output: W, bufs: &[IoSlice]) -> io::Result<()>
 where
     W: Write,
@@ -459,6 +460,7 @@ where
 /// The function that gets called when we're unable to print a message.
 #[inline(never)]
 #[cold]
+#[allow(clippy::needless_pass_by_value)]
 fn log_failure(err: io::Error) {
     // We've just failed to log, no point in failing to log the fact that we
     // have failed to log... So we remove our panic hook and use the default
