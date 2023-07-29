@@ -21,6 +21,12 @@ impl Timestamp {
     ///
     /// This only works for days later then 2001.
     // NOTE: pub for testing.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::similar_names,
+        clippy::unreadable_literal
+    )]
     pub(crate) fn from(time: SystemTime) -> Timestamp {
         // Ported from musl, original source:
         // <https://git.musl-libc.org/cgit/musl/tree/src/time/__secs_to_tm.c>.
@@ -58,7 +64,7 @@ impl Timestamp {
 
         let mut remyears = remdays / 365;
         if remyears == 4 {
-            remyears -= 1
+            remyears -= 1;
         }
         remdays -= remyears * 365;
 
