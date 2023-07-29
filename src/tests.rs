@@ -1,6 +1,5 @@
 use std::io::{IoSlice, Write};
 use std::mem::take;
-use std::ops::Deref;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
 use std::{env, fmt, panic, str};
@@ -86,13 +85,13 @@ sequential_tests! {
         env::remove_var("LOG_LEVEL");
 
         let want = &[
-            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:101\"\n",
-            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
-            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
-            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
-            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
-            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
-            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:107\"\n",
+            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:100\"\n",
+            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:101\"\n",
+            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
+            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
+            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
+            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
+            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
         ];
 
         #[cfg(feature = "timestamp")]
@@ -247,7 +246,7 @@ where
         .line(Some(123))
         .key_values(&("key1", "value1"))
         .build();
-    let kvs = &[
+    let kvs: &[(&str, &dyn kv::ToValue)] = &[
         ("key2a", (&"value2") as &dyn kv::ToValue),
         ("key2b", &123u64),
         ("key3c", &-123i64),
@@ -257,7 +256,6 @@ where
         ("key2g", &'c'),
         ("key2\"g", &(&MyDisplay as &dyn fmt::Display)),
     ];
-    let kvs: &[(&str, &dyn kv::ToValue)] = kvs.deref();
     let kvs: &dyn kv::Source = &kvs;
     let record2 = Record::builder()
         .args(format_args!("arguments2 with \"quotes\""))
