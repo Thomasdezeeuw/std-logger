@@ -23,7 +23,7 @@ pub struct Config<F, Kvs> {
     add_loc: Option<bool>,
     targets: Targets,
     kvs: Kvs,
-    _format: PhantomData<F>,
+    format: PhantomData<F>,
 }
 
 impl Config<(), NoKvs> {
@@ -55,7 +55,7 @@ where
             add_loc: None,
             targets: get_log_targets(),
             kvs,
-            _format: PhantomData,
+            format: PhantomData,
         }
     }
 
@@ -69,7 +69,7 @@ where
             add_loc: self.add_loc,
             targets: self.targets,
             kvs,
-            _format: self._format,
+            format: self.format,
         }
     }
 
@@ -82,7 +82,7 @@ where
             add_loc: Some(enable),
             targets: self.targets,
             kvs: self.kvs,
-            _format: self._format,
+            format: self.format,
         }
     }
 
@@ -114,7 +114,7 @@ where
             add_loc: self.add_loc.unwrap_or(self.filter >= LevelFilter::Debug),
             targets: self.targets,
             kvs: self.kvs,
-            _format: self._format,
+            format: self.format,
         });
         log::set_boxed_logger(logger)?;
         log::set_max_level(self.filter);

@@ -344,7 +344,7 @@ struct Logger<F, Kvs> {
     targets: Targets,
     /// Key-values supplied for all logs.
     kvs: Kvs,
-    _format: PhantomData<F>,
+    format: PhantomData<F>,
 }
 
 #[derive(Debug, Eq, PartialEq)]
