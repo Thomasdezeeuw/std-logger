@@ -3,7 +3,7 @@
 use std::fmt::{self, Write};
 use std::io::IoSlice;
 
-use log::kv::value::Visit;
+use log::kv::{VisitSource, VisitValue};
 use log::{kv, Record};
 
 #[cfg(feature = "timestamp")]
@@ -142,7 +142,7 @@ fn line(buf: &Buffer) -> &[u8] {
 /// `user_name="Thomas" user_id=123 is_admin=true`
 struct KeyValueVisitor<'b>(&'b mut Vec<u8>);
 
-impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
+impl<'b, 'kvs> VisitSource<'kvs> for KeyValueVisitor<'b> {
     fn visit_pair(&mut self, key: kv::Key<'kvs>, value: kv::Value<'kvs>) -> Result<(), kv::Error> {
         self.0.push(b' ');
         Buf(self.0).extend_from_slice(key.as_str().as_bytes());
@@ -151,7 +151,7 @@ impl<'b, 'kvs> kv::Visitor<'kvs> for KeyValueVisitor<'b> {
     }
 }
 
-impl<'b, 'v> Visit<'v> for KeyValueVisitor<'b> {
+impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
     fn visit_any(&mut self, value: kv::Value) -> Result<(), kv::Error> {
         self.0.push(b'\"');
         Buf(self.0)
