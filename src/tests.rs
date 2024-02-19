@@ -254,7 +254,10 @@ where
         ("key2e", &true),
         ("key2f", &false),
         ("key2g", &'c'),
-        ("key2\"g", &(&MyDisplay as &dyn fmt::Display)),
+        (
+            "key2\"g",
+            &(&log::kv::Value::from_display(&MyDisplay) as &dyn kv::ToValue),
+        ),
     ];
     let kvs: &dyn kv::Source = &kvs;
     let record2 = Record::builder()

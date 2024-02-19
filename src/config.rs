@@ -166,7 +166,7 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
     let backtrace = Backtrace::force_capture();
 
     let key_values = [
-        ("backtrace", kv::Value::capture_display(&backtrace)),
+        ("backtrace", kv::Value::from_display(&backtrace)),
         ("thread_name", kv::Value::from(thread_name)),
     ];
     let key_values = key_values.as_slice();
@@ -195,7 +195,10 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
 pub struct NoKvs;
 
 impl kv::Source for NoKvs {
-    fn visit<'kvs>(&'kvs self, _: &mut dyn log::kv::Visitor<'kvs>) -> Result<(), log::kv::Error> {
+    fn visit<'kvs>(
+        &'kvs self,
+        _: &mut dyn log::kv::VisitSource<'kvs>,
+    ) -> Result<(), log::kv::Error> {
         Ok(())
     }
 

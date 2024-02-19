@@ -273,7 +273,7 @@
 //!     request!(
 //!         url = req.url,
 //!         status = req.status,
-//!         response_time = log::as_debug!(req.response_time);
+//!         response_time:? = req.response_time;
 //!         "HTTP request"
 //!     );
 //! }
