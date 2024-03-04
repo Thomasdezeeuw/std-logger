@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.3
+
+* Update to log's stable kv feature
+  (https://github.com/Thomasdezeeuw/std-logger/commit/e32b37232101f59b1a7c34c3f7885e5b880ebb70).
+* Add `thread_name` to key-value pairs for panics
+  (https://github.com/Thomasdezeeuw/std-logger/commit/e4f60a69855ef25a69f0e95e354e633a1bf7b6eb).
+* Add `must_use` attribute to Config
+  (https://github.com/Thomasdezeeuw/std-logger/commit/42fa63a73d45a6b1e7b41e5223b93222ba77dad9).
+
 ## v0.5.2
 
 * Fix writing of `"` without escaping it using logfmt in some cases
