@@ -12,10 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Rustc version
-      run: rustc -Vv
-    - name: Cargo version
-      run: cargo -Vv
+    - uses: dtolnay/rust-toolchain@stable
     - name: Install Cargo Hack
       run: cargo install --debug cargo-hack
     - name: Tests
@@ -24,29 +21,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Add Clippy
-      run: rustup component add clippy
-    - name: Rustc version
-      run: rustc -Vv
-    - name: Cargo version
-      run: cargo -Vv
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
     - name: Check Clippy
       run: cargo clippy --all-features -- -D warnings
   Rustfmt:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Add rustfmt
-      run: rustup component add rustfmt
-    - name: Rustc version
-      run: rustc -Vv
-    - name: Cargo version
-      run: cargo -Vv
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
     - name: Check formatting
       run: cargo fmt --all -- --check
   Docs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
     - name: Check docs
       run: RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
