@@ -235,15 +235,15 @@ impl<'b> fmt::Write for Buf<'b> {
         let mut bytes = [0; 8];
         let bytes: &[u8] = match c {
             // Quotation mark.
-            '"' => &[b'\\', b'"'],
+            '"' => b"\\\"",
             // Reverse solidus.
-            '\\' => &[b'\\', b'\\'],
+            '\\' => b"\\\\",
             // Line feed.
-            '\u{000A}' => &[b'\\', b'n'],
+            '\u{000A}' => b"\\n",
             // Carriage return.
-            '\u{000D}' => &[b'\\', b'r'],
+            '\u{000D}' => b"\\r",
             // Tab.
-            '\u{0009}' => &[b'\\', b't'],
+            '\u{0009}' => b"\\t",
             _ => c.encode_utf8(&mut bytes).as_bytes(),
         };
         self.0.extend_from_slice(bytes);
