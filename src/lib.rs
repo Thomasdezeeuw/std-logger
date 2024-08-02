@@ -11,10 +11,10 @@
 //! This crate supports the three following formats:
 //!
 //! * Logfmt, following <https://www.brandur.org/logfmt>, use
-//! [`Config::logfmt`].
+//!   [`Config::logfmt`].
 //! * JSON, use [`Config::json`].
 //! * Google Cloud Platform structured logging using JSON, following
-//! <https://cloud.google.com/logging/docs/structured-logging>, [`Config::gcloud`].
+//!   <https://cloud.google.com/logging/docs/structured-logging>, [`Config::gcloud`].
 //!
 //! ### Logfmt
 //!
