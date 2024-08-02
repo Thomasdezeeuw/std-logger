@@ -237,19 +237,19 @@ impl<'b> fmt::Write for Buf<'b> {
         let mut bytes = [0; 8];
         let bytes: &[u8] = match c {
             // Quotation mark.
-            '"' => &[b'\\', b'"'],
+            '"' => b"\\\"",
             // Reverse solidus.
-            '\\' => &[b'\\', b'\\'],
+            '\\' => b"\\\\",
             // Backspace.
-            '\u{0008}' => &[b'\\', b'b'],
+            '\u{0008}' => b"\\b",
             // Form feed.
-            '\u{000C}' => &[b'\\', b'f'],
+            '\u{000C}' => b"\\f",
             // Line feed.
-            '\u{000A}' => &[b'\\', b'n'],
+            '\u{000A}' => b"\\n",
             // Carriage return.
-            '\u{000D}' => &[b'\\', b'r'],
+            '\u{000D}' => b"\\r",
             // Tab.
-            '\u{0009}' => &[b'\\', b't'],
+            '\u{0009}' => b"\\t",
             // Control characters (U+0000 through U+001F).
             '\u{0000}'..='\u{001F}' => {
                 bytes[0] = b'\\';
