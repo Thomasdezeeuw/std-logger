@@ -197,8 +197,8 @@ impl fmt::Display for MyDisplay {
 #[test]
 fn format_logfmt() {
     format_test::<LogFmt, _>(&[
-        "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n",
-        "lvl=\"INFO\" msg=\"some arguments1\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n",
+        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n",
+        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n",
         "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" file=\"file2:111\"\n",
         "lvl=\"ERROR\" msg=\"panicking!\" target=\"panic\" module=\"\" file=\"??:0\"\n",
     ], add_timestamp);
@@ -207,8 +207,8 @@ fn format_logfmt() {
 #[test]
 fn format_json() {
     format_test::<Json, _>(&[
-        "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n",
-        "{\"level\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        "{\"level\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n",
+        "{\"level\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
         "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"file\":\"file2\",\"line\":\"111\"}\n",
         "{\"level\":\"ERROR\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"file\":\"??\",\"line\":\"0\"}\n",
     ], add_timestamp_json);
@@ -217,8 +217,8 @@ fn format_json() {
 #[test]
 fn format_gcloud() {
     format_test::<Gcloud, _>(&[
-        "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n",
-        "{\"severity\":\"INFO\",\"message\":\"some arguments1\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        "{\"severity\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n",
+        "{\"severity\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
         "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n",
         "{\"severity\":\"CRITICAL\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"sourceLocation\":{\"file\":\"??\",\"line\":\"0\"}}\n",
     ], add_timestamp_json);
@@ -238,7 +238,7 @@ where
     A: Fn(String, SystemTime, &str) -> String,
 {
     let record1 = Record::builder()
-        .args(format_args!("some arguments1"))
+        .args(format_args!("some\r\n\t\nmessage"))
         .level(Level::Info)
         .target("some_target1")
         .module_path_static(Some("module_path1"))

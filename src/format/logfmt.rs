@@ -222,13 +222,31 @@ impl<'b> Buf<'b> {
 impl<'b> fmt::Write for Buf<'b> {
     #[inline]
     fn write_str(&mut self, string: &str) -> fmt::Result {
-        self.extend_from_slice(string.as_bytes());
+        for c in string.chars() {
+            let _ = self.write_char(c);
+        }
         Ok(())
     }
 
     #[inline]
     fn write_char(&mut self, c: char) -> fmt::Result {
-        self.extend_from_slice(c.encode_utf8(&mut [0u8; 4]).as_bytes());
+        // See RFC 8259, section 7
+        // <https://datatracker.ietf.org/doc/html/rfc8259#section-7>.
+        let mut bytes = [0; 8];
+        let bytes: &[u8] = match c {
+            // Quotation mark.
+            '"' => &[b'\\', b'"'],
+            // Reverse solidus.
+            '\\' => &[b'\\', b'\\'],
+            // Line feed.
+            '\u{000A}' => &[b'\\', b'n'],
+            // Carriage return.
+            '\u{000D}' => &[b'\\', b'r'],
+            // Tab.
+            '\u{0009}' => &[b'\\', b't'],
+            _ => c.encode_utf8(&mut bytes).as_bytes(),
+        };
+        self.0.extend_from_slice(bytes);
         Ok(())
     }
 }
