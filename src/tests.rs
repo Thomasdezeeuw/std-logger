@@ -275,7 +275,7 @@ where
         .target("panic")
         .build();
 
-    let tests = &[
+    let tests = [
         (record1.clone(), true),
         (record1, false),
         (record2, true),
@@ -283,7 +283,7 @@ where
     ];
 
     for ((record, debug), want) in tests.into_iter().zip(expected) {
-        let got = format_record::<F>(record, *debug);
+        let got = format_record::<F>(&record, debug);
         #[cfg(feature = "timestamp")]
         let want = add_timestamp(want.to_string(), SystemTime::now(), &got);
         assert_eq!(got, *want);
