@@ -199,7 +199,9 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
 
     fn visit_str(&mut self, value: &str) -> Result<(), kv::Error> {
         self.0.push(b'\"');
-        Buf(self.0).write_str(value);
+        Buf(self.0)
+            .write_str(value)
+            .unwrap_or_else(|_| unreachable!());
         self.0.push(b'\"');
         Ok(())
     }
