@@ -156,6 +156,7 @@ pub(crate) fn get_log_targets() -> Targets {
 
 /// Panic hook that logs the panic using [`log::error!`].
 #[cfg(feature = "log-panic")]
+#[allow(deprecated)] // Change to PanicHookInfo info after MSRV is updated to 1.82.
 fn log_panic(info: &std::panic::PanicInfo<'_>) {
     use std::backtrace::Backtrace;
     use std::thread;
