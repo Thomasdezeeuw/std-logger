@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.4
+
+* Handle new lines in logfmt
+  (https://github.com/Thomasdezeeuw/std-logger/commit/7d3bfc48d0d99aeb66edfc33450c8d60089aa32e).
+* Escape values in logfmt
+  (https://github.com/Thomasdezeeuw/std-logger/commit/f79404bb9ea311475871a053c4cdb2a1cc5c4a76).
+
 ## v0.5.3
 
 * Update to log's stable kv feature
