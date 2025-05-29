@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.5
+
+* Support encoding a None/null value
+  (https://github.com/Thomasdezeeuw/std-logger/commit/3b61d0fe33d0592dcaffbbf619e601d8cd9018f6).
+
 ## v0.5.4
 
 * Handle new lines in logfmt
