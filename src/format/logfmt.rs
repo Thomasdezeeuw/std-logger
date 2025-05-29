@@ -161,6 +161,11 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
         Ok(())
     }
 
+    fn visit_null(&mut self) -> Result<(), kv::Error> {
+        self.0.extend_from_slice(b"null");
+        Ok(())
+    }
+
     fn visit_u64(&mut self, value: u64) -> Result<(), kv::Error> {
         let mut itoa = itoa::Buffer::new();
         self.0.extend_from_slice(itoa.format(value).as_bytes());
