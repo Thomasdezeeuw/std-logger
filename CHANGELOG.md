@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.7
+
+* Fixed an error when value serialisation didn't handle empty arrays and objects
+  correctly.
+  (https://github.com/Thomasdezeeuw/std-logger/commit/313fa8cc75e95c3577f79fd79a9611304e13993f).
+
 ## v0.5.6
 
 * Add `serde1` feature for json and gcloud formatting. This adds support for

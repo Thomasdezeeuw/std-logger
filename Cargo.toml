@@ -5,7 +5,7 @@ A logging implementation for the log crate that logs messages to standard error
 and requests to standard out. It support a number of output formats including
 JSON, JSON for GCP (gcloud) and logfmt.
 """
-version       = "0.5.6"
+version       = "0.5.7"
 authors       = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
 license       = "MIT/Apache-2.0"
 documentation = "https://docs.rs/std-logger"
