@@ -75,7 +75,7 @@ const TS_END_INDEX: usize = 1;
 
 #[inline]
 #[cfg(feature = "timestamp")]
-fn write_timestamp(buf: &mut Buffer) {
+pub(crate) fn write_timestamp(buf: &mut Buffer) {
     let _ = buf.buf[TS_END_INDEX];
     buf.buf[1] = b'"';
     buf.buf[2] = b't';
@@ -96,12 +96,12 @@ fn write_timestamp(buf: &mut Buffer) {
 }
 
 #[inline]
-fn timestamp(buf: &Buffer) -> &[u8] {
+pub(crate) fn timestamp(buf: &Buffer) -> &[u8] {
     &buf.buf[..TS_END_INDEX]
 }
 
 #[inline]
-fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
+pub(crate) fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
     buf.buf.truncate(TS_END_INDEX);
     if let Some(msg) = args.as_str() {
         Buf(&mut buf.buf)
@@ -116,12 +116,16 @@ fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
 }
 
 #[inline]
-fn msg(buf: &Buffer) -> &[u8] {
+pub(crate) fn msg(buf: &Buffer) -> &[u8] {
     &buf.buf[TS_END_INDEX..buf.indices[0]]
 }
 
 #[inline]
-fn write_key_values<Kvs: kv::Source>(buf: &mut Buffer, kvs1: &dyn kv::Source, kvs2: Kvs) {
+pub(crate) fn write_key_values<Kvs: kv::Source>(
+    buf: &mut Buffer,
+    kvs1: &dyn kv::Source,
+    kvs2: Kvs,
+) {
     buf.buf.extend_from_slice(b"\"");
     // TODO: see if we can add to the slice of `IoSlice` using the keys
     // and string values.
@@ -132,19 +136,19 @@ fn write_key_values<Kvs: kv::Source>(buf: &mut Buffer, kvs1: &dyn kv::Source, kv
 }
 
 #[inline]
-fn key_values(buf: &Buffer) -> &[u8] {
+pub(crate) fn key_values(buf: &Buffer) -> &[u8] {
     &buf.buf[buf.indices[0]..buf.indices[1]]
 }
 
 #[inline]
-fn write_line(buf: &mut Buffer, line: u32) {
+pub(crate) fn write_line(buf: &mut Buffer, line: u32) {
     let mut itoa = itoa::Buffer::new();
     buf.buf.extend_from_slice(itoa.format(line).as_bytes());
     buf.indices[2] = buf.buf.len();
 }
 
 #[inline]
-fn line(buf: &Buffer) -> &[u8] {
+pub(crate) fn line(buf: &Buffer) -> &[u8] {
     &buf.buf[buf.indices[1]..buf.indices[2]]
 }
 
