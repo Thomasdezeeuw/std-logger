@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.5.6
+
+* Add `serde1` feature for json and gcloud formatting. This adds support for
+  using `serde::Serializer` when serialising the key-value pairs to support
+  complex value.
+  (https://github.com/Thomasdezeeuw/std-logger/commit/d79684f1f27e8af9b8b0ed5a4f5248a96cf69407).
+
 ## v0.5.5
 
 * Support encoding a None/null value
