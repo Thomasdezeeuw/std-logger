@@ -180,6 +180,7 @@
 //! * *timestamp*, enabled by default.
 //! * *log-panic*, enabled by default.
 //! * *nightly*, disabled by default.
+//! * *serde1*, disabled by default.
 //!
 //!
 //! ## Timestamp feature
@@ -238,6 +239,12 @@
 //!
 //! Currently this enables nothing.
 //!
+//! ## Serde1 feature
+//!
+//! Enables the use of [serde] version 1. Mainly this allows the value of
+//! key-value pairs to be structured.
+//!
+//! [serde]: https://crates.io/crates/serde
 //!
 //! # Examples
 //!

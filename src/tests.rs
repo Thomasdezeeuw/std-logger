@@ -199,7 +199,10 @@ fn format_logfmt() {
     format_test::<LogFmt, _>(&[
         "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n",
         "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n",
+        #[cfg(not(feature = "serde1"))]
         "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null file=\"file2:111\"\n",
+        #[cfg(feature = "serde1")]
+        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null serde_map=\"MyValue { a: 1, b: \\\"2\\\", c: MyValue2 { d: 3.0 } }\" serde_array=\"[1, 2, 3]\" serde_tuple=\"(1, 2.0, \\\"3\\\")\" file=\"file2:111\"\n",
         "lvl=\"ERROR\" msg=\"panicking!\" target=\"panic\" module=\"\" file=\"??:0\"\n",
     ], add_timestamp);
 }
@@ -209,7 +212,10 @@ fn format_json() {
     format_test::<Json, _>(&[
         "{\"level\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"file\":\"file1\",\"line\":\"123\"}\n",
         "{\"level\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        #[cfg(not(feature = "serde1"))]
         "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"null_key\":null,\"file\":\"file2\",\"line\":\"111\"}\n",
+        #[cfg(feature = "serde1")]
+        "{\"level\":\"WARN\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"null_key\":null,\"serde_map\":{\"a\":1,\"b\":\"2\",\"c\":{\"d\":3.0}},\"serde_array\":[1,2,3],\"serde_tuple\":[1,2.0,\"3\"],\"file\":\"file2\",\"line\":\"111\"}\n",
         "{\"level\":\"ERROR\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"file\":\"??\",\"line\":\"0\"}\n",
     ], add_timestamp_json);
 }
@@ -219,7 +225,10 @@ fn format_gcloud() {
     format_test::<Gcloud, _>(&[
         "{\"severity\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\",\"sourceLocation\":{\"file\":\"file1\",\"line\":\"123\"}}\n",
         "{\"severity\":\"INFO\",\"message\":\"some\\r\\n\\t\\nmessage\",\"target\":\"some_target1\",\"module\":\"module_path1\",\"key1\":\"value1\"}\n",
+        #[cfg(not(feature = "serde1"))]
         "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"null_key\":null,\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n",
+        #[cfg(feature = "serde1")]
+        "{\"severity\":\"WARNING\",\"message\":\"arguments2 with \\\"quotes\\\"\",\"target\":\"second_target\",\"module\":\"module_path1\",\"key2a\":\"value2\",\"key2b\":123,\"key3c\":-123,\"key3d\":123.0,\"key2e\":true,\"key2f\":false,\"key2g\":\"c\",\"key2\\\"g\":\"MyDisplay\",\"null_key\":null,\"serde_map\":{\"a\":1,\"b\":\"2\",\"c\":{\"d\":3.0}},\"serde_array\":[1,2,3],\"serde_tuple\":[1,2.0,\"3\"],\"sourceLocation\":{\"file\":\"file2\",\"line\":\"111\"}}\n",
         "{\"severity\":\"CRITICAL\",\"message\":\"panicking!\",\"target\":\"panic\",\"module\":\"\",\"sourceLocation\":{\"file\":\"??\",\"line\":\"0\"}}\n",
     ], add_timestamp_json);
 }
@@ -246,6 +255,8 @@ where
         .line(Some(123))
         .key_values(&("key1", "value1"))
         .build();
+    #[cfg(feature = "serde1")]
+    let vec = vec![1, 2, 3];
     let kvs: &[(&str, &dyn kv::ToValue)] = &[
         ("key2a", (&"value2") as &dyn kv::ToValue),
         ("key2b", &123u64),
@@ -259,6 +270,19 @@ where
             &(&log::kv::Value::from_display(&MyDisplay) as &dyn kv::ToValue),
         ),
         ("null_key", &None::<&str>),
+        #[cfg(feature = "serde1")]
+        (
+            "serde_map",
+            &kv::Value::from_serde(&MyValue {
+                a: 1,
+                b: "2",
+                c: MyValue2 { d: 3.0 },
+            }),
+        ),
+        #[cfg(feature = "serde1")]
+        ("serde_array", &kv::Value::from_serde(&vec)),
+        #[cfg(feature = "serde1")]
+        ("serde_tuple", &kv::Value::from_serde(&(1u8, 2.0f64, "3"))),
     ];
     let kvs: &dyn kv::Source = &kvs;
     let record2 = Record::builder()
@@ -275,6 +299,20 @@ where
         .level(Level::Error)
         .target("panic")
         .build();
+
+    #[cfg(feature = "serde1")]
+    #[derive(serde::Serialize)]
+    struct MyValue {
+        a: usize,
+        b: &'static str,
+        c: MyValue2,
+    }
+
+    #[cfg(feature = "serde1")]
+    #[derive(serde::Serialize)]
+    struct MyValue2 {
+        d: f64,
+    }
 
     let tests = [
         (record1.clone(), true),
