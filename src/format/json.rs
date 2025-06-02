@@ -470,9 +470,8 @@ impl<'b> serde::ser::SerializeSeq for &mut KeyValueVisitor<'b> {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        debug_assert!(self.0.last() == Some(&b','));
-        let idx = self.0.len() - 1;
-        self.0[idx] = b']';
+        let _ = self.0.pop_if(|b| *b == b',');
+        self.0.push(b']');
         Ok(())
     }
 }
@@ -552,9 +551,8 @@ impl<'b> serde::ser::SerializeMap for &mut KeyValueVisitor<'b> {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        debug_assert!(self.0.last() == Some(&b','));
-        let idx = self.0.len() - 1;
-        self.0[idx] = b'}';
+        let _ = self.0.pop_if(|b| *b == b',');
+        self.0.push(b'}');
         Ok(())
     }
 }
