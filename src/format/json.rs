@@ -164,7 +164,11 @@ impl<'b, 'kvs> VisitSource<'kvs> for KeyValueVisitor<'b> {
         let _ = fmt::Write::write_str(&mut Buf(self.0), key.as_str());
         self.0.push(b'"');
         self.0.push(b':');
-        value.visit(self)
+        #[cfg(feature = "serde1")]
+        serde::Serialize::serialize(&value, self).map_err(kv::Error::boxed)?;
+        #[cfg(not(feature = "serde1"))]
+        value.visit(self)?;
+        Ok(())
     }
 }
 
@@ -224,6 +228,368 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
         let _ = fmt::Write::write_str(&mut Buf(self.0), value);
         self.0.push(b'\"');
         Ok(())
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+    type SerializeSeq = Self;
+    type SerializeTuple = Self;
+    type SerializeTupleStruct = Self;
+    type SerializeTupleVariant = Self;
+    type SerializeMap = Self;
+    type SerializeStruct = Self;
+    type SerializeStructVariant = Self;
+
+    fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_bool(v);
+        Ok(())
+    }
+
+    fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_i64(v as i64);
+        Ok(())
+    }
+
+    fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_i64(v as i64);
+        Ok(())
+    }
+
+    fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_i64(v as i64);
+        Ok(())
+    }
+
+    fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_i64(v);
+        Ok(())
+    }
+
+    fn serialize_i128(self, v: i128) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_i128(v);
+        Ok(())
+    }
+
+    fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_u64(v as u64);
+        Ok(())
+    }
+
+    fn serialize_u16(self, v: u16) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_u64(v as u64);
+        Ok(())
+    }
+
+    fn serialize_u32(self, v: u32) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_u64(v as u64);
+        Ok(())
+    }
+
+    fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_u64(v);
+        Ok(())
+    }
+
+    fn serialize_u128(self, v: u128) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_u128(v);
+        Ok(())
+    }
+
+    fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_f64(v as f64);
+        Ok(())
+    }
+
+    fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_f64(v);
+        Ok(())
+    }
+
+    fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {
+        // A char encoded as UTF-8 takes 4 bytes at most.
+        let mut buf = [0; 4];
+        self.serialize_str(v.encode_utf8(&mut buf))
+    }
+
+    fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_str(v);
+        Ok(())
+    }
+
+    fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+        use serde::ser::SerializeSeq;
+        // TODO: consider base64 encoding or something.
+        let mut serializer = self.serialize_seq(Some(v.len()))?;
+        for b in v {
+            serializer.serialize_element(b)?;
+        }
+        serializer.end()
+    }
+
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
+        let _ = self.visit_null();
+        Ok(())
+    }
+
+    fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        self.serialize_none()
+    }
+
+    fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
+        self.serialize_unit()
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _: &'static str,
+        _: u32,
+        variant: &'static str,
+    ) -> Result<Self::Ok, Self::Error> {
+        self.serialize_str(variant)
+    }
+
+    fn serialize_newtype_struct<T>(
+        self,
+        _: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        value.serialize(self)
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        name: &'static str,
+        _: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        // Serialise as a map using the variant name as key and the value as value.
+        let mut serializer = self.serialize_struct(name, 1)?;
+        serde::ser::SerializeStruct::serialize_field(&mut serializer, variant, value)?;
+        serde::ser::SerializeStruct::end(serializer)
+    }
+
+    fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        self.0.push(b'[');
+        Ok(self)
+    }
+
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
+        self.serialize_seq(Some(len))
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        _: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        self.serialize_tuple(len)
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        name: &'static str,
+        _: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        // Serialise as a map.
+        let mut serializer = self.serialize_struct(name, 1)?;
+        serde::ser::SerializeMap::serialize_key(&mut serializer, variant)?;
+        serializer.serialize_seq(Some(len))
+    }
+
+    fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+        self.0.push(b'{');
+        Ok(self)
+    }
+
+    fn serialize_struct(
+        self,
+        _: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        self.serialize_map(Some(len))
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _: &'static str,
+        _: u32,
+        _: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        self.serialize_map(Some(len))
+    }
+
+    fn collect_str<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
+    where
+        T: ?Sized + std::fmt::Display,
+    {
+        self.0.push(b'\"');
+        Buf(self.0)
+            .write_fmt(format_args!("{value}"))
+            .unwrap_or_else(|_| unreachable!());
+        self.0.push(b'\"');
+        Ok(())
+    }
+
+    fn is_human_readable(&self) -> bool {
+        true
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeSeq for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        value.serialize(&mut **self)?;
+        self.0.push(b',');
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        debug_assert!(self.0.last() == Some(&b','));
+        let idx = self.0.len() - 1;
+        self.0[idx] = b']';
+        Ok(())
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeTuple for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        serde::ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeSeq::end(self)
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeTupleStruct for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        serde::ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeSeq::end(self)
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeTupleVariant for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        serde::ser::SerializeSeq::serialize_element(self, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeSeq::end(self)
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeMap for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        key.serialize(&mut **self)?;
+        self.0.push(b':');
+        Ok(())
+    }
+
+    fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        value.serialize(&mut **self)?;
+        self.0.push(b',');
+        Ok(())
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        debug_assert!(self.0.last() == Some(&b','));
+        let idx = self.0.len() - 1;
+        self.0[idx] = b'}';
+        Ok(())
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeStruct for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        serde::ser::SerializeMap::serialize_entry(self, key, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeMap::end(self)
+    }
+}
+
+#[cfg(feature = "serde1")]
+impl<'b> serde::ser::SerializeStructVariant for &mut KeyValueVisitor<'b> {
+    type Ok = ();
+    type Error = std::fmt::Error; // Unused.
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + serde::Serialize,
+    {
+        serde::ser::SerializeMap::serialize_entry(self, key, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        serde::ser::SerializeMap::end(self)
     }
 }
 
