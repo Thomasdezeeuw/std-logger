@@ -191,8 +191,8 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
     }
 
     fn visit_f64(&mut self, value: f64) -> Result<(), kv::Error> {
-        let mut ryu = ryu::Buffer::new();
-        self.0.extend_from_slice(ryu.format(value).as_bytes());
+        let mut buf = zmij::Buffer::new();
+        self.0.extend_from_slice(buf.format(value).as_bytes());
         Ok(())
     }
 
