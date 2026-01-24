@@ -26,9 +26,9 @@ nightly   = []
 
 [dependencies]
 log        = { version = "0.4.21", default-features = false, features = ["kv_std"] }
-itoa       = { version = "1.0.1", default-features = false }
-ryu        = { version = "1.0.5", default-features = false }
-serde      = { version = "1",     default-features = false, optional = true }
+itoa       = { version = "1.0.1",  default-features = false }
+zmij       = { version = "1.0.16", default-features = false }
+serde      = { version = "1",      default-features = false, optional = true }
 
 [dev-dependencies]
 libc       = { version = "0.2.86", default-features = false }
