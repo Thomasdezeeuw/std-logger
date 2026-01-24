@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.8
+
+* Replace the ryu dependency with zmij, it's faster
+  (https://github.com/Thomasdezeeuw/std-logger/commit/c17642dcdffa828dd81668adf3aaaff0e7b3a33c).
+
 ## v0.5.7
 
 * Fixed an error when value serialisation didn't handle empty arrays and objects
