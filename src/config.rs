@@ -181,7 +181,7 @@ fn log_panic(info: &std::panic::PanicInfo<'_>) {
         let _ = record
             .file(Some(location.file()))
             .line(Some(location.line()));
-    };
+    }
 
     // Format for {info}: "panicked at '$message', $file:$line:$col".
     log::logger().log(
