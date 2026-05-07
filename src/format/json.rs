@@ -165,7 +165,7 @@ impl<'b, 'kvs> VisitSource<'kvs> for KeyValueVisitor<'b> {
         self.0.push(b'"');
         self.0.push(b':');
         #[cfg(feature = "serde1")]
-        serde::Serialize::serialize(&value, self).map_err(kv::Error::boxed)?;
+        serde_core::Serialize::serialize(&value, self).map_err(kv::Error::boxed)?;
         #[cfg(not(feature = "serde1"))]
         value.visit(self)?;
         Ok(())
@@ -232,7 +232,7 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::Serializer for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
     type SerializeSeq = Self;
@@ -320,7 +320,7 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
-        use serde::ser::SerializeSeq;
+        use serde_core::ser::SerializeSeq;
         // TODO: consider base64 encoding or something.
         let mut serializer = self.serialize_seq(Some(v.len()))?;
         for b in v {
@@ -336,7 +336,7 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
 
     fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         value.serialize(self)
     }
@@ -364,7 +364,7 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         value.serialize(self)
     }
@@ -377,12 +377,12 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
         value: &T,
     ) -> Result<Self::Ok, Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         // Serialise as a map using the variant name as key and the value as value.
         let mut serializer = self.serialize_struct(name, 1)?;
-        serde::ser::SerializeStruct::serialize_field(&mut serializer, variant, value)?;
-        serde::ser::SerializeStruct::end(serializer)
+        serde_core::ser::SerializeStruct::serialize_field(&mut serializer, variant, value)?;
+        serde_core::ser::SerializeStruct::end(serializer)
     }
 
     fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
@@ -411,7 +411,7 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
         // Serialise as a map.
         let mut serializer = self.serialize_struct(name, 1)?;
-        serde::ser::SerializeMap::serialize_key(&mut serializer, variant)?;
+        serde_core::ser::SerializeMap::serialize_key(&mut serializer, variant)?;
         serializer.serialize_seq(Some(len))
     }
 
@@ -456,13 +456,13 @@ impl<'b> serde::Serializer for &mut KeyValueVisitor<'b> {
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeSeq for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeSeq for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         value.serialize(&mut **self)?;
         self.0.push(b',');
@@ -477,64 +477,64 @@ impl<'b> serde::ser::SerializeSeq for &mut KeyValueVisitor<'b> {
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeTuple for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeTuple for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
-        serde::ser::SerializeSeq::serialize_element(self, value)
+        serde_core::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        serde::ser::SerializeSeq::end(self)
+        serde_core::ser::SerializeSeq::end(self)
     }
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeTupleStruct for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeTupleStruct for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
-        serde::ser::SerializeSeq::serialize_element(self, value)
+        serde_core::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        serde::ser::SerializeSeq::end(self)
+        serde_core::ser::SerializeSeq::end(self)
     }
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeTupleVariant for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeTupleVariant for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
-        serde::ser::SerializeSeq::serialize_element(self, value)
+        serde_core::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        serde::ser::SerializeSeq::end(self)
+        serde_core::ser::SerializeSeq::end(self)
     }
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeMap for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeMap for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_key<T>(&mut self, key: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         key.serialize(&mut **self)?;
         self.0.push(b':');
@@ -543,7 +543,7 @@ impl<'b> serde::ser::SerializeMap for &mut KeyValueVisitor<'b> {
 
     fn serialize_value<T>(&mut self, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
         value.serialize(&mut **self)?;
         self.0.push(b',');
@@ -558,36 +558,36 @@ impl<'b> serde::ser::SerializeMap for &mut KeyValueVisitor<'b> {
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeStruct for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeStruct for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
-        serde::ser::SerializeMap::serialize_entry(self, key, value)
+        serde_core::ser::SerializeMap::serialize_entry(self, key, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        serde::ser::SerializeMap::end(self)
+        serde_core::ser::SerializeMap::end(self)
     }
 }
 
 #[cfg(feature = "serde1")]
-impl<'b> serde::ser::SerializeStructVariant for &mut KeyValueVisitor<'b> {
+impl<'b> serde_core::ser::SerializeStructVariant for &mut KeyValueVisitor<'b> {
     type Ok = ();
     type Error = std::fmt::Error; // Unused.
 
     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
     where
-        T: ?Sized + serde::Serialize,
+        T: ?Sized + serde_core::Serialize,
     {
-        serde::ser::SerializeMap::serialize_entry(self, key, value)
+        serde_core::ser::SerializeMap::serialize_entry(self, key, value)
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        serde::ser::SerializeMap::end(self)
+        serde_core::ser::SerializeMap::end(self)
     }
 }
 

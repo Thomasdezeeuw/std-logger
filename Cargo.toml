@@ -21,14 +21,14 @@ autobenches   = false
 default   = ["timestamp", "log-panic"]
 log-panic = []
 timestamp = []
-serde1    = ["serde", "log/kv_serde"]
+serde1    = ["serde_core", "log/kv_serde"]
 nightly   = []
 
 [dependencies]
 log        = { version = "0.4.21", default-features = false, features = ["kv_std"] }
 itoa       = { version = "1.0.1",  default-features = false }
 zmij       = { version = "1.0.16", default-features = false }
-serde      = { version = "1",      default-features = false, optional = true }
+serde_core = { version = "1",      default-features = false, optional = true }
 
 [dev-dependencies]
 libc       = { version = "0.2.86", default-features = false }
