@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.9
+
+* Switch to serde\_core instead of serde, should compile things faster
+  (https://github.com/Thomasdezeeuw/std-logger/commit/5dcd593f744940fa0bea129d939ccb409b84430a).
+
 ## v0.5.8
 
 * Replace the ryu dependency with zmij, it's faster
