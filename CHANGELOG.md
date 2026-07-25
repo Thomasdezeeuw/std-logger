@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.10
+
+* Log target and module after key-value pairs in logfmt
+  (https://github.com/Thomasdezeeuw/std-logger/commit/a2eb6447825e3c45398fffb613bee1ab24b112c5).
+
 ## v0.5.9
 
 * Switch to serde\_core instead of serde, should compile things faster
