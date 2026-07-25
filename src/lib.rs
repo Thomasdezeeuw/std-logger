@@ -294,13 +294,13 @@
 #![warn(missing_debug_implementations, missing_docs, unused_results)]
 
 use std::cell::RefCell;
-use std::io::{self, IoSlice, Write};
+use std::io::{self, Write};
 use std::marker::PhantomData;
 
 use log::{kv, LevelFilter, Log, Metadata, Record};
 
 mod format;
-use format::{Buffer, Format, BUFS_SIZE};
+use format::Format;
 
 mod config;
 pub use config::Config;
@@ -409,18 +409,17 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
     // Thread local buffer for logging. This way we only lock standard out/error
     // for a single writev call and don't create half written logs.
     thread_local! {
-        static BUF: RefCell<Buffer> = RefCell::new(Buffer::new());
+        static BUF: RefCell<Vec<u8>> = RefCell::new(vec![0; 2048]);
     }
 
     BUF.with(|buf| {
-        let mut bufs = [IoSlice::new(&[]); BUFS_SIZE];
         match buf.try_borrow_mut() {
             Ok(mut buf) => {
                 // NOTE: keep in sync with the `Err` branch below.
-                let bufs = F::format(&mut bufs, &mut buf, record, kvs, add_loc);
+                F::format(&mut buf, record, kvs, add_loc);
                 match record.target() {
-                    REQUEST_TARGET => write_once(stdout(), bufs),
-                    _ => write_once(stderr(), bufs),
+                    REQUEST_TARGET => write_once(stdout(), &buf),
+                    _ => write_once(stderr(), &buf),
                 }
                 .unwrap_or_else(log_failure);
             }
@@ -430,12 +429,12 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
                 // `record` panics, and the `log-panic` feature is enabled which
                 // calls `error!` and in turn this function again, while still
                 // borrowing `BUF`.
-                let mut buf = Buffer::new();
+                let mut buf = vec![0; 2048];
                 // NOTE: keep in sync with the `Ok` branch above.
-                let bufs = F::format(&mut bufs, &mut buf, record, kvs, add_loc);
+                F::format(&mut buf, record, kvs, add_loc);
                 match record.target() {
-                    REQUEST_TARGET => write_once(stdout(), bufs),
-                    _ => write_once(stderr(), bufs),
+                    REQUEST_TARGET => write_once(stdout(), &buf),
+                    _ => write_once(stderr(), &buf),
                 }
                 .unwrap_or_else(log_failure);
             }
@@ -445,13 +444,12 @@ fn log<F: Format, Kvs: kv::Source>(record: &Record, kvs: &Kvs, add_loc: bool) {
 
 /// Write the entire `buf`fer into the `output` or return an error.
 #[inline]
-fn write_once<W>(mut output: W, bufs: &[IoSlice]) -> io::Result<()>
+fn write_once<W>(mut output: W, buf: &[u8]) -> io::Result<()>
 where
     W: Write,
 {
-    output.write_vectored(bufs).and_then(|written| {
-        let total_len = bufs.iter().map(|b| b.len()).sum();
-        if written == total_len {
+    output.write(buf).and_then(|written| {
+        if written == buf.len() {
             Ok(())
         } else {
             // Not completely correct when going by the name alone, but it's the
