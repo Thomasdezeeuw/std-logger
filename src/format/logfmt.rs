@@ -41,22 +41,22 @@ impl Format for LogFmt {
         bufs[3] = IoSlice::new(b"\" msg=\"");
         // The message (and the end of the log level), e.g. `" msg="some message`.
         bufs[4] = IoSlice::new(msg(buf));
-        // The target, e.g. `" target="request`.
-        bufs[5] = IoSlice::new(b"\" target=\"");
-        bufs[6] = IoSlice::new(record.target().as_bytes());
-        // The module, e.g. `" module="stored::http`.
-        bufs[7] = IoSlice::new(b"\" module=\"");
-        bufs[8] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
         // Any key value pairs supplied by the user.
-        bufs[9] = IoSlice::new(key_values(buf));
+        bufs[5] = IoSlice::new(key_values(buf));
+        // The target, e.g. ` target="request`.
+        bufs[6] = IoSlice::new(b" target=\"");
+        bufs[7] = IoSlice::new(record.target().as_bytes());
+        // The module, e.g. `" module="stored::http`.
+        bufs[8] = IoSlice::new(b"\" module=\"");
+        bufs[9] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
         // Optional file, e.g. ` file="some_file:123"`, and a line end.
         let n = if add_loc {
-            bufs[10] = IoSlice::new(b" file=\"");
+            bufs[10] = IoSlice::new(b"\" file=\"");
             bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
             bufs[12] = IoSlice::new(line(buf));
             13
         } else {
-            bufs[10] = IoSlice::new(b"\n");
+            bufs[10] = IoSlice::new(b"\"\n");
             11
         };
 
