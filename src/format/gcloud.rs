@@ -1,12 +1,10 @@
 //! Google Cloud Platform structured logging using JSON, following
 //! <https://cloud.google.com/logging/docs/structured-logging>.
 
-use std::io::IoSlice;
-
 use log::{kv, Record};
 
-use crate::format::json;
-use crate::format::{Buffer, Format, BUFS_SIZE};
+use crate::format::json::{self, TS_END_INDEX};
+use crate::format::Format;
 use crate::PANIC_TARGET;
 
 /// Google Cloud Platform structured logging using JSON, following
@@ -16,60 +14,58 @@ pub enum Gcloud {}
 
 impl Format for Gcloud {
     fn format<'b, Kvs: kv::Source>(
-        bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
-        buf: &'b mut Buffer,
+        buf: &'b mut Vec<u8>,
         record: &'b Record,
         kvs: &Kvs,
         add_loc: bool,
-    ) -> &'b [IoSlice<'b>] {
-        // Write all parts of the buffer that need formatting.
-        buf.buf[0] = b'{';
+    ) {
+        buf.truncate(TS_END_INDEX + 12);
+
+        // The first part of the message is the timestamp, e.g.
+        // `{"timestamp":"2020-12-31T12:32:23.906132Z`
+        buf[0] = b'{';
         #[cfg(feature = "timestamp")]
         json::write_timestamp(buf);
-        json::write_msg(buf, record.args());
-        json::write_key_values(buf, record.key_values(), kvs);
-        if add_loc {
-            json::write_line(buf, record.line().unwrap_or(0));
-        }
 
-        // Now that we've written the message to our buffer we have to construct it.
-        // The first part of the message is the timestamp and log level (severity),
-        // e.g. `{"timestamp":"2020-12-31T12:32:23.906132Z","severity":"INFO`.
-        // Or without a timestamp, i.e. `{"severity":"INFO`.
-        bufs[0] = IoSlice::new(json::timestamp(buf));
-        bufs[1] = IoSlice::new(b"\"severity\":\"");
+        // Next is the log severity, e.g. `","severity":"INFO`.
+        buf[TS_END_INDEX..TS_END_INDEX + 12].copy_from_slice(b"\"severity\":\"");
         if record.level() == log::Level::Error && record.target() == PANIC_TARGET {
             // If we're panicking we increase the severity to critical.
-            bufs[2] = IoSlice::new(b"CRITICAL");
+            buf.extend_from_slice(b"CRITICAL");
         } else {
-            bufs[2] = IoSlice::new(severity(record.level()));
+            buf.extend_from_slice(severity(record.level()));
         }
-        // The message (and the end of the log level), e.g. `","message":"some message`.
-        bufs[3] = IoSlice::new(b"\",\"message\":\"");
-        bufs[4] = IoSlice::new(json::msg(buf));
+
+        // The message (and the end of the log level), e.g. `","message":"some
+        // message`.
+        buf.extend_from_slice(b"\",\"message\":\"");
+        json::write_msg(buf, record.args());
+
         // The target, e.g. `","target":"request`.
-        bufs[5] = IoSlice::new(b"\",\"target\":\"");
-        bufs[6] = IoSlice::new(record.target().as_bytes());
-        // The module, e.g. `","module":"stored::http`.
-        bufs[7] = IoSlice::new(b"\",\"module\":\"");
-        bufs[8] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
+        buf.extend_from_slice(b"\",\"target\":\"");
+        buf.extend_from_slice(record.target().as_bytes());
+
+        // The module, e.g. `","module":"stored::http"`.
+        buf.extend_from_slice(b"\",\"module\":\"");
+        buf.extend_from_slice(record.module_path().unwrap_or("").as_bytes());
+        buf.extend_from_slice(b"\"");
+
         // Any key value pairs supplied by the user.
-        bufs[9] = IoSlice::new(json::key_values(buf));
+        json::write_key_values(buf, record.key_values(), kvs);
+
         // Optional file, e.g.
         // `","sourceLocation":{"file":"some_file.rs","line":"123"}}`, and a line
         // end.
-        let n = if add_loc {
-            bufs[10] = IoSlice::new(b",\"sourceLocation\":{\"file\":\"");
-            bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
-            bufs[12] = IoSlice::new(b"\",\"line\":\"");
-            bufs[13] = IoSlice::new(json::line(buf));
-            bufs[14] = IoSlice::new(b"\"}}\n");
-            15
+        if add_loc {
+            buf.extend_from_slice(b",\"sourceLocation\":{\"file\":\"");
+            buf.extend_from_slice(record.file().unwrap_or("??").as_bytes());
+            buf.extend_from_slice(b"\",\"line\":\"");
+            let mut itoa = itoa::Buffer::new();
+            buf.extend_from_slice(itoa.format(record.line().unwrap_or(0)).as_bytes());
+            buf.extend_from_slice(b"\"}}\n");
         } else {
-            bufs[10] = IoSlice::new(b"}\n");
-            11
-        };
-        &bufs[..n]
+            buf.extend_from_slice(b"}\n");
+        }
     }
 }
 

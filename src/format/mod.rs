@@ -1,5 +1,3 @@
-use std::io::IoSlice;
-
 use log::{kv, Record};
 
 pub(crate) mod logfmt;
@@ -21,48 +19,16 @@ pub trait Format {
     ///
     /// If `add_loc` is `true` the file and line are added.
     fn format<'b, Kvs: kv::Source>(
-        bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
-        buf: &'b mut Buffer,
+        buf: &'b mut Vec<u8>,
         record: &'b Record,
         kvs: &Kvs,
         add_loc: bool,
-    ) -> &'b [IoSlice<'b>];
-}
-
-/// Number of buffers the format functions require.
-pub const BUFS_SIZE: usize = 16;
-
-/// Number of indices used in `Buffer`:
-/// 0) Message.
-/// 1) Key value pairs.
-/// 2) File line.
-const N_INDICES: usize = 3;
-
-/// Formatting buffer.
-#[derive(Debug)]
-pub struct Buffer {
-    buf: Vec<u8>,
-    indices: [usize; N_INDICES],
-}
-
-impl Buffer {
-    /// Create a new format `Buffer`.
-    pub(crate) fn new() -> Buffer {
-        Buffer {
-            buf: vec![0; 2048],
-            indices: [0; N_INDICES],
-        }
-    }
+    );
 }
 
 /// Format the timestamp in the following format:
 /// `YYYY-MM-DDThh:mm:ss.SSSSSSZ`. For example:
 /// `2020-12-31T11:00:01.743357Z`.
-///
-/// # Notes
-///
-/// The `buf` must come from [`Buffer::ts`] as it only overwrites the date, not
-/// the format.
 #[inline]
 #[cfg(feature = "timestamp")]
 fn format_timestamp(buf: &mut [u8]) {

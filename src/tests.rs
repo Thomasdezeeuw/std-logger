@@ -1,4 +1,3 @@
-use std::io::{IoSlice, Write};
 use std::mem::take;
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime};
@@ -7,8 +6,8 @@ use std::{env, fmt, panic, str};
 use log::{debug, error, info, kv, trace, warn, Level, LevelFilter, Record};
 
 use crate::config::{get_log_targets, get_max_level, NoKvs};
-use crate::format::{self, Format, Gcloud, Json, LogFmt};
-use crate::{request, Targets, BUFS_SIZE, LOG_OUTPUT, PANIC_TARGET, REQUEST_TARGET};
+use crate::format::{Format, Gcloud, Json, LogFmt};
+use crate::{request, Targets, LOG_OUTPUT, PANIC_TARGET, REQUEST_TARGET};
 
 /// Macro to create a group of sequential tests.
 macro_rules! sequential_tests {
@@ -85,13 +84,13 @@ sequential_tests! {
         env::remove_var("LOG_LEVEL");
 
         let want = &[
-            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:100\"\n",
-            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:101\"\n",
-            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
-            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
-            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
-            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
-            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:106\"\n",
+            "lvl=\"TRACE\" msg=\"trace message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:99\"\n",
+            "lvl=\"DEBUG\" msg=\"debug message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:100\"\n",
+            "lvl=\"INFO\" msg=\"info message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:101\"\n",
+            "lvl=\"WARN\" msg=\"warn message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:102\"\n",
+            "lvl=\"ERROR\" msg=\"error message\" target=\"std_logger::tests\" module=\"std_logger::tests\" file=\"src/tests.rs:103\"\n",
+            "lvl=\"INFO\" msg=\"request message1\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:104\"\n",
+            "lvl=\"INFO\" msg=\"request message2\" target=\"request\" module=\"std_logger::tests\" file=\"src/tests.rs:105\"\n",
         ];
 
         #[cfg(feature = "timestamp")]
@@ -332,12 +331,9 @@ where
 }
 
 fn format_record<F: Format>(record: &Record, debug: bool) -> String {
-    let mut bufs = [IoSlice::new(&[]); BUFS_SIZE];
-    let mut buf = format::Buffer::new();
-    let bufs = F::format(&mut bufs, &mut buf, record, &NoKvs, debug);
-    let mut output = Vec::new();
-    let _ = output.write_vectored(bufs).unwrap();
-    String::from_utf8(output).unwrap()
+    let mut buf = vec![0; 2048];
+    F::format(&mut buf, record, &NoKvs, debug);
+    String::from_utf8(buf).unwrap()
 }
 
 #[test]

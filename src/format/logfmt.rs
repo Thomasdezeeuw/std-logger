@@ -1,14 +1,13 @@
 //! Logfmt following <https://www.brandur.org/logfmt>.
 
 use std::fmt::{self, Write};
-use std::io::IoSlice;
 
 use log::kv::{VisitSource, VisitValue};
 use log::{kv, Record};
 
 #[cfg(feature = "timestamp")]
 use crate::format::format_timestamp;
-use crate::format::{Buffer, Format, BUFS_SIZE};
+use crate::format::Format;
 
 /// Logfmt following <https://www.brandur.org/logfmt>.
 #[allow(missing_debug_implementations)]
@@ -16,51 +15,51 @@ pub enum LogFmt {}
 
 impl Format for LogFmt {
     fn format<'b, Kvs: kv::Source>(
-        bufs: &'b mut [IoSlice<'b>; BUFS_SIZE],
-        buf: &'b mut Buffer,
+        buf: &'b mut Vec<u8>,
         record: &'b Record,
         kvs: &Kvs,
         add_loc: bool,
-    ) -> &'b [IoSlice<'b>] {
-        // Write all parts of the buffer that need formatting.
+    ) {
+        buf.truncate(TS_END_INDEX + 5);
+        // The first part of the message is the timestamp, if enabled, e.g.
+        // `ts="2020-12-31T12:32:23.906132Z"`.
         #[cfg(feature = "timestamp")]
         write_timestamp(buf);
+
+        // Next is the log level, e.g. `lvl="INFO`. The ending qoute is added
+        // with the opening of the message below.
+        buf[TS_END_INDEX..TS_END_INDEX + 5].copy_from_slice(b"lvl=\"");
+        buf.extend_from_slice(record.level().as_str().as_bytes());
+
+        // The message (and the end of the log level), e.g. `" msg="some
+        // message`.
+        buf.extend_from_slice(b"\" msg=\"");
         write_msg(buf, record.args());
+        buf.extend_from_slice(b"\"");
+
+        // Next are the key-value pairs. Each pair start with a space so we
+        // don't have to append one after the message (and if there are no pairs
+        // we don't have to do anything).
         write_key_values(buf, record.key_values(), kvs);
+
+        // The target, e.g. ` target="request`.
+        buf.extend_from_slice(b" target=\"");
+        buf.extend_from_slice(record.target().as_bytes());
+
+        // The module, e.g. `" module="stored::http`.
+        buf.extend_from_slice(b"\" module=\"");
+        buf.extend_from_slice(record.module_path().unwrap_or("").as_bytes());
+
+        // Optional file, e.g. ` file="some_file:123"`, and a line end.
         if add_loc {
-            write_line(buf, record.line().unwrap_or(0));
+            buf.extend_from_slice(b"\" file=\"");
+            buf.extend_from_slice(record.file().unwrap_or("??").as_bytes());
+            buf.push(b':');
+            let mut itoa = itoa::Buffer::new();
+            buf.extend_from_slice(itoa.format(record.line().unwrap_or(0)).as_bytes());
         }
 
-        // Now that we've written the message to our buffer we have to construct it.
-        // The first part of the message is the timestamp and log level, e.g.
-        // `ts="2020-12-31T12:32:23.906132Z" lvl="INFO`.
-        // Or without a timestamp, i.e. `lvl="INFO`.
-        bufs[0] = IoSlice::new(timestamp(buf));
-        bufs[1] = IoSlice::new(b"lvl=\"");
-        bufs[2] = IoSlice::new(record.level().as_str().as_bytes());
-        bufs[3] = IoSlice::new(b"\" msg=\"");
-        // The message (and the end of the log level), e.g. `" msg="some message`.
-        bufs[4] = IoSlice::new(msg(buf));
-        // Any key value pairs supplied by the user.
-        bufs[5] = IoSlice::new(key_values(buf));
-        // The target, e.g. ` target="request`.
-        bufs[6] = IoSlice::new(b" target=\"");
-        bufs[7] = IoSlice::new(record.target().as_bytes());
-        // The module, e.g. `" module="stored::http`.
-        bufs[8] = IoSlice::new(b"\" module=\"");
-        bufs[9] = IoSlice::new(record.module_path().unwrap_or("").as_bytes());
-        // Optional file, e.g. ` file="some_file:123"`, and a line end.
-        let n = if add_loc {
-            bufs[10] = IoSlice::new(b"\" file=\"");
-            bufs[11] = IoSlice::new(record.file().unwrap_or("??").as_bytes());
-            bufs[12] = IoSlice::new(line(buf));
-            13
-        } else {
-            bufs[10] = IoSlice::new(b"\"\n");
-            11
-        };
-
-        &bufs[..n]
+        buf.extend_from_slice(b"\"\n");
     }
 }
 
@@ -72,70 +71,26 @@ const TS_END_INDEX: usize = 0;
 
 #[inline]
 #[cfg(feature = "timestamp")]
-fn write_timestamp(buf: &mut Buffer) {
-    let _ = buf.buf[TS_END_INDEX];
-    buf.buf[0] = b't';
-    buf.buf[1] = b's';
-    buf.buf[2] = b'=';
-    buf.buf[3] = b'"';
-    format_timestamp(&mut buf.buf[4..]);
-    buf.buf[TS_END_INDEX - 2] = b'"';
-    buf.buf[TS_END_INDEX - 1] = b' ';
+fn write_timestamp(buf: &mut Vec<u8>) {
+    buf[0..4].copy_from_slice(b"ts=\"");
+    format_timestamp(&mut buf[4..]);
+    buf[31..33].copy_from_slice(b"\" ");
 }
 
 #[inline]
-fn timestamp(buf: &Buffer) -> &[u8] {
-    &buf.buf[..TS_END_INDEX]
-}
-
-#[inline]
-fn write_msg(buf: &mut Buffer, args: &fmt::Arguments) {
-    buf.buf.truncate(TS_END_INDEX);
+fn write_msg(buf: &mut Vec<u8>, args: &fmt::Arguments) {
     if let Some(msg) = args.as_str() {
-        Buf(&mut buf.buf)
-            .write_str(msg)
-            .unwrap_or_else(|_| unreachable!());
+        Buf(buf).write_str(msg).unwrap_or_else(|_| unreachable!());
     } else {
-        Buf(&mut buf.buf)
-            .write_fmt(*args)
-            .unwrap_or_else(|_| unreachable!());
+        Buf(buf).write_fmt(*args).unwrap_or_else(|_| unreachable!());
     }
-    buf.indices[0] = buf.buf.len();
 }
 
 #[inline]
-fn msg(buf: &Buffer) -> &[u8] {
-    &buf.buf[TS_END_INDEX..buf.indices[0]]
-}
-
-#[inline]
-fn write_key_values<Kvs: kv::Source>(buf: &mut Buffer, kvs1: &dyn kv::Source, kvs2: Kvs) {
-    buf.buf.extend_from_slice(b"\"");
-    // TODO: see if we can add to the slice of `IoSlice` using the keys
-    // and string values.
-    let mut visitor = KeyValueVisitor(&mut buf.buf);
+fn write_key_values<Kvs: kv::Source>(buf: &mut Vec<u8>, kvs1: &dyn kv::Source, kvs2: Kvs) {
+    let mut visitor = KeyValueVisitor(buf);
     kvs1.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
     kvs2.visit(&mut visitor).unwrap_or_else(|_| unreachable!());
-    buf.indices[1] = buf.buf.len();
-}
-
-#[inline]
-fn key_values(buf: &Buffer) -> &[u8] {
-    &buf.buf[buf.indices[0]..buf.indices[1]]
-}
-
-#[inline]
-fn write_line(buf: &mut Buffer, line: u32) {
-    buf.buf.push(b':');
-    let mut itoa = itoa::Buffer::new();
-    buf.buf.extend_from_slice(itoa.format(line).as_bytes());
-    buf.buf.extend_from_slice(b"\"\n");
-    buf.indices[2] = buf.buf.len();
-}
-
-#[inline]
-fn line(buf: &Buffer) -> &[u8] {
-    &buf.buf[buf.indices[1]..buf.indices[2]]
 }
 
 /// Formats key value pairs in the following format: `key="value"`. For example:
@@ -216,6 +171,7 @@ impl<'b, 'v> VisitValue<'v> for KeyValueVisitor<'b> {
 struct Buf<'b>(&'b mut Vec<u8>);
 
 impl<'b> Buf<'b> {
+    #[inline]
     fn extend_from_slice(&mut self, bytes: &[u8]) {
         for &b in bytes {
             if b == b'"' {
