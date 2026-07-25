@@ -197,12 +197,12 @@ impl fmt::Display for MyDisplay {
 #[test]
 fn format_logfmt() {
     format_test::<LogFmt, _>(&[
-        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\" file=\"file1:123\"\n",
-        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" target=\"some_target1\" module=\"module_path1\" key1=\"value1\"\n",
+        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" key1=\"value1\" target=\"some_target1\" module=\"module_path1\" file=\"file1:123\"\n",
+        "lvl=\"INFO\" msg=\"some\\r\\n\\t\\nmessage\" key1=\"value1\" target=\"some_target1\" module=\"module_path1\"\n",
         #[cfg(not(feature = "serde1"))]
-        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null file=\"file2:111\"\n",
+        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null target=\"second_target\" module=\"module_path1\" file=\"file2:111\"\n",
         #[cfg(feature = "serde1")]
-        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" target=\"second_target\" module=\"module_path1\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null serde_map=\"MyValue { a: 1, b: \\\"2\\\", c: MyValue2 { d: 3.0 } }\" serde_array=\"[1, 2, 3]\" serde_tuple=\"(1, 2.0, \\\"3\\\")\" file=\"file2:111\"\n",
+        "lvl=\"WARN\" msg=\"arguments2 with \\\"quotes\\\"\" key2a=\"value2\" key2b=123 key3c=-123 key3d=123.0 key2e=true key2f=false key2g=\"c\" key2\\\"g=\"MyDisplay\" null_key=null serde_map=\"MyValue { a: 1, b: \\\"2\\\", c: MyValue2 { d: 3.0 } }\" serde_array=\"[1, 2, 3]\" serde_tuple=\"(1, 2.0, \\\"3\\\")\" target=\"second_target\" module=\"module_path1\" file=\"file2:111\"\n",
         "lvl=\"ERROR\" msg=\"panicking!\" target=\"panic\" module=\"\" file=\"??:0\"\n",
     ], add_timestamp);
 }
